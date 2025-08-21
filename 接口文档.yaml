@@ -1,0 +1,1146 @@
+openapi: 3.0.3
+info:
+  title: 网约车系统后台管理API
+  description: |
+    网约车系统后台管理接口文档，支持用户认证、车辆管理、订单管理、支付等功能。
+    
+    ## 认证方式
+    使用JWT Bearer Token进行认证，在请求头中添加：
+    `Authorization: Bearer <your_jwt_token>`
+    
+    ## 通用响应格式
+    所有接口统一返回格式：
+    ```json
+    {
+      "code": 200,
+      "msg": "操作成功", 
+      "data": {},
+      "timestamp": "2025-07-16T10:30:00Z"
+    }
+    ```
+  version: 1.0.0
+  contact:
+    email: tech-support@ridehailing.com
+  license:
+    name: MIT
+servers:
+  - url: https://api.ridehailing.com/v1
+    description: 生产环境
+  - url: https://test-api.ridehailing.com/v1
+    description: 测试环境
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token格式认证
+      
+  schemas:
+    CommonResponse:
+      type: object
+      required:
+        - code
+        - msg
+        - timestamp
+      properties:
+        code:
+          type: integer
+          description: 状态码
+          example: 200
+        msg:
+          type: string
+          description: 响应消息
+          example: "操作成功"
+        data:
+          type: object
+          description: 响应数据
+        timestamp:
+          type: string
+          format: date-time
+          description: 时间戳
+          example: "2025-07-16T10:30:00Z"
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - msg
+        - timestamp
+      properties:
+        code:
+          type: integer
+          description: 错误码
+          example: 400
+        msg:
+          type: string
+          description: 错误信息
+          example: "请求参数错误"
+        data:
+          type: object
+          nullable: true
+          description: 错误详情
+        timestamp:
+          type: string
+          format: date-time
+          description: 时间戳
+
+    Location:
+      type: object
+      required:
+        - lat
+        - lng
+        - address
+      properties:
+        lat:
+          type: number
+          format: double
+          description: 纬度
+          example: 30.2741
+        lng:
+          type: number
+          format: double
+          description: 经度
+          example: 120.1551
+        address:
+          type: string
+          description: 地址
+          example: "杭州市西湖区文三路"
+
+    UserInfo:
+      type: object
+      properties:
+        nickname:
+          type: string
+          description: 用户昵称
+          example: "张三"
+        avatar:
+          type: string
+          description: 头像URL
+          example: "https://wx.qlogo.cn/..."
+        phone:
+          type: string
+          description: 手机号
+          example: "138****5678"
+
+    VehicleInfo:
+      type: object
+      required:
+        - plate_number
+        - vehicle_type
+        - brand
+        - model
+        - color
+        - year
+      properties:
+        plate_number:
+          type: string
+          description: 车牌号
+          example: "浙A12345"
+        vehicle_type:
+          type: string
+          description: 车辆类型
+          example: "轿车"
+        brand:
+          type: string
+          description: 品牌
+          example: "丰田"
+        model:
+          type: string
+          description: 型号
+          example: "凯美瑞"
+        color:
+          type: string
+          description: 颜色
+          example: "白色"
+        year:
+          type: integer
+          description: 年份
+          example: 2020
+        registration_image:
+          type: string
+          description: 行驶证图片(base64)
+        insurance_expiry:
+          type: string
+          format: date
+          description: 保险到期日期
+          example: "2025-12-31"
+
+    OrderInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 订单ID
+          example: "order_123456789"
+        customer_id:
+          type: string
+          description: 客户ID
+          example: "user_123456"
+        driver_id:
+          type: string
+          description: 司机ID
+          example: "driver_001"
+        start_location:
+          $ref: '#/components/schemas/Location'
+        end_location:
+          $ref: '#/components/schemas/Location'
+        status:
+          type: string
+          enum: [created, dispatching, assigned, ongoing, completed, cancelled]
+          description: 订单状态
+          example: "ongoing"
+        create_time:
+          type: string
+          format: date-time
+          description: 创建时间
+        estimated_price:
+          type: number
+          format: double
+          description: 预估价格
+          example: 25.5
+
+    Pagination:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          description: 当前页码
+          example: 1
+        page_size:
+          type: integer
+          description: 每页大小
+          example: 10
+        total_count:
+          type: integer
+          description: 总数量
+          example: 25
+        total_pages:
+          type: integer
+          description: 总页数
+          example: 3
+
+paths:
+  # 用户认证模块
+  /auth/wechat/login:
+    post:
+      tags:
+        - 用户认证
+      summary: 微信用户注册/登录
+      description: 通过微信授权码进行用户登录或注册
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  description: 微信授权临时码
+                  example: "wx_temp_code_123"
+                encryptedData:
+                  type: string
+                  description: 加密用户数据
+                  example: "encrypted_user_data"
+                iv:
+                  type: string
+                  description: 初始化向量
+                  example: "initialization_vector"
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token:
+                            type: string
+                            description: JWT token
+                            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                          user_id:
+                            type: string
+                            description: 用户ID
+                            example: "user_123456"
+                          role:
+                            type: string
+                            enum: [customer, driver, admin]
+                            description: 用户角色
+                            example: "customer"
+                          expires_in:
+                            type: integer
+                            description: token有效期(秒)
+                            example: 7200
+                          user_info:
+                            $ref: '#/components/schemas/UserInfo'
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/driver/register:
+    post:
+      tags:
+        - 用户认证
+      summary: 司机注册
+      description: 用户申请成为司机
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - license_number
+                - license_image
+                - name
+                - phone
+              properties:
+                license_number:
+                  type: string
+                  description: 驾驶证号
+                  example: "330100199001011234"
+                license_image:
+                  type: string
+                  description: 驾驶证图片(base64)
+                  example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ..."
+                name:
+                  type: string
+                  description: 真实姓名
+                  example: "李四"
+                phone:
+                  type: string
+                  description: 手机号
+                  example: "139****8765"
+      responses:
+        '200':
+          description: 申请提交成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: "pending"
+                          driver_id:
+                            type: string
+                            example: "driver_123456"
+                          verify_status:
+                            type: string
+                            example: "verifying"
+                          estimated_review_time:
+                            type: string
+                            example: "24小时内"
+
+  /auth/admin/login:
+    post:
+      tags:
+        - 用户认证
+      summary: 管理员登录
+      description: 管理员账户登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone
+                - password
+              properties:
+                phone:
+                  type: string
+                  description: 手机号
+                  example: "13800138000"
+                password:
+                  type: string
+                  description: 密码
+                  example: "admin123456"
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token:
+                            type: string
+                            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                          user_id:
+                            type: string
+                            example: "admin_001"
+                          role:
+                            type: string
+                            example: "admin"
+                          expires_in:
+                            type: integer
+                            example: 7200
+                          permissions:
+                            type: array
+                            items:
+                              type: string
+                            example: ["user_manage", "vehicle_audit", "order_manage"]
+
+  /auth/refresh:
+    post:
+      tags:
+        - 用户认证
+      summary: Token续期
+      description: 刷新JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  description: 刷新token
+                  example: "refresh_token_string"
+      responses:
+        '200':
+          description: 续期成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token:
+                            type: string
+                            example: "new_jwt_token"
+                          expires_in:
+                            type: integer
+                            example: 7200
+
+  # 车辆管理模块
+  /vehicles:
+    post:
+      tags:
+        - 车辆管理
+      summary: 司机提交车辆信息
+      description: 司机提交新车辆信息申请审核
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleInfo'
+      responses:
+        '200':
+          description: 提交成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          vehicle_id:
+                            type: string
+                            example: "vehicle_123456"
+                          status:
+                            type: string
+                            example: "pending"
+                          verify_status:
+                            type: string
+                            example: "verifying"
+                          submit_time:
+                            type: string
+                            format: date-time
+
+    get:
+      tags:
+        - 车辆管理
+      summary: 获取车辆列表
+      description: 司机查看自己的车辆，管理员查看所有车辆
+      parameters:
+        - name: status
+          in: query
+          description: 车辆状态筛选
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+        - name: driver_id
+          in: query
+          description: 司机ID筛选
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: 页码
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          description: 每页大小
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          vehicles:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  example: "vehicle_123456"
+                                driver_id:
+                                  type: string
+                                  example: "driver_123"
+                                driver_name:
+                                  type: string
+                                  example: "李四"
+                                plate_number:
+                                  type: string
+                                  example: "浙A12345"
+                                vehicle_type:
+                                  type: string
+                                  example: "轿车"
+                                brand:
+                                  type: string
+                                  example: "丰田"
+                                model:
+                                  type: string
+                                  example: "凯美瑞"
+                                status:
+                                  type: string
+                                  example: "pending"
+                                submit_time:
+                                  type: string
+                                  format: date-time
+                                review_time:
+                                  type: string
+                                  format: date-time
+                                  nullable: true
+                          pagination:
+                            $ref: '#/components/schemas/Pagination'
+
+  /vehicles/{vehicle_id}:
+    put:
+      tags:
+        - 车辆管理
+      summary: 修改车辆信息
+      description: 司机修改车辆信息
+      parameters:
+        - name: vehicle_id
+          in: path
+          required: true
+          description: 车辆ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleInfo'
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          vehicle_id:
+                            type: string
+                            example: "vehicle_123456"
+                          status:
+                            type: string
+                            example: "pending"
+                          verify_status:
+                            type: string
+                            example: "verifying"
+                          submit_time:
+                            type: string
+                            format: date-time
+
+  /vehicles/{vehicle_id}/audit:
+    post:
+      tags:
+        - 车辆管理
+      summary: 管理员审核车辆
+      description: 管理员审核车辆申请
+      parameters:
+        - name: vehicle_id
+          in: path
+          required: true
+          description: 车辆ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+              properties:
+                action:
+                  type: string
+                  enum: [approve, reject]
+                  description: 审核动作
+                  example: "approve"
+                comment:
+                  type: string
+                  description: 审核意见
+                  example: "车辆信息完整，审核通过"
+      responses:
+        '200':
+          description: 审核完成
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          vehicle_id:
+                            type: string
+                            example: "vehicle_123456"
+                          status:
+                            type: string
+                            example: "approved"
+                          review_time:
+                            type: string
+                            format: date-time
+                          reviewer:
+                            type: string
+                            example: "admin_001"
+
+  # 订单管理模块
+  /orders:
+    post:
+      tags:
+        - 订单管理
+      summary: 创建订单
+      description: 客户创建新订单
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - start_location
+                - end_location
+              properties:
+                start_location:
+                  $ref: '#/components/schemas/Location'
+                end_location:
+                  $ref: '#/components/schemas/Location'
+                book_time:
+                  type: string
+                  format: date-time
+                  description: 预约时间
+                  example: "2025-07-16T14:00:00Z"
+                passenger_count:
+                  type: integer
+                  description: 乘客数量
+                  example: 1
+                special_requirements:
+                  type: string
+                  description: 特殊要求
+                  example: "需要儿童座椅"
+      responses:
+        '200':
+          description: 订单创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          order_id:
+                            type: string
+                            example: "order_123456789"
+                          routes:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                route_id:
+                                  type: string
+                                  example: "route_001"
+                                distance:
+                                  type: number
+                                  format: double
+                                  example: 8.5
+                                duration:
+                                  type: integer
+                                  example: 18
+                                toll_fee:
+                                  type: number
+                                  format: double
+                                  example: 0
+                                estimated_price:
+                                  type: number
+                                  format: double
+                                  example: 25.5
+                          status:
+                            type: string
+                            example: "created"
+                          create_time:
+                            type: string
+                            format: date-time
+
+    get:
+      tags:
+        - 订单管理
+      summary: 获取订单列表
+      description: 获取订单列表，客户查看自己的订单，司机查看接单订单，管理员查看所有订单
+      parameters:
+        - name: status
+          in: query
+          description: 订单状态筛选
+          schema:
+            type: string
+            enum: [created, dispatching, assigned, ongoing, completed, cancelled]
+        - name: date_start
+          in: query
+          description: 开始日期
+          schema:
+            type: string
+            format: date
+        - name: date_end
+          in: query
+          description: 结束日期
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          description: 页码
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          description: 每页大小
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          orders:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/OrderInfo'
+                          pagination:
+                            $ref: '#/components/schemas/Pagination'
+
+  /orders/{order_id}:
+    get:
+      tags:
+        - 订单管理
+      summary: 获取订单详情
+      description: 获取指定订单的详细信息
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          description: 订单ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            example: "order_123456789"
+                          customer_info:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                example: "user_123456"
+                              name:
+                                type: string
+                                example: "张**"
+                              phone:
+                                type: string
+                                example: "138****5678"
+                          driver_info:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                example: "driver_001"
+                              name:
+                                type: string
+                                example: "王师傅"
+                              phone:
+                                type: string
+                                example: "139****8765"
+                              vehicle:
+                                type: string
+                                example: "浙A12345 丰田凯美瑞"
+                              rating:
+                                type: number
+                                format: double
+                                example: 4.8
+                          route_info:
+                            type: object
+                            properties:
+                              start_location:
+                                $ref: '#/components/schemas/Location'
+                              end_location:
+                                $ref: '#/components/schemas/Location'
+                              actual_route:
+                                type: object
+                                properties:
+                                  distance:
+                                    type: number
+                                    format: double
+                                    example: 8.7
+                                  duration:
+                                    type: integer
+                                    example: 22
+                                  path:
+                                    type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        lat:
+                                          type: number
+                                          format: double
+                                        lng:
+                                          type: number
+                                          format: double
+                          status:
+                            type: string
+                            example: "completed"
+                          timeline:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                status:
+                                  type: string
+                                time:
+                                  type: string
+                                  format: date-time
+                                description:
+                                  type: string
+                          payment_info:
+                            type: object
+                            properties:
+                              total_amount:
+                                type: number
+                                format: double
+                                example: 26.0
+                              payment_method:
+                                type: string
+                                example: "wechat_pay"
+                              payment_status:
+                                type: string
+                                example: "paid"
+                              payment_time:
+                                type: string
+                                format: date-time
+
+  /orders/{order_id}/dispatch:
+    post:
+      tags:
+        - 订单管理
+      summary: 智能派单
+      description: 系统自动派单或管理员手动触发派单
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          description: 订单ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dispatch_type:
+                  type: string
+                  enum: [auto, manual]
+                  example: "auto"
+                radius:
+                  type: integer
+                  description: 搜索半径(米)
+                  example: 5000
+                priority:
+                  type: string
+                  enum: [normal, high, urgent]
+                  example: "normal"
+      responses:
+        '200':
+          description: 派单成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          order_id:
+                            type: string
+                            example: "order_123456789"
+                          dispatch_type:
+                            type: string
+                            example: "auto"
+                          candidate_drivers:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                driver_id:
+                                  type: string
+                                  example: "driver_001"
+                                driver_name:
+                                  type: string
+                                  example: "王师傅"
+                                distance:
+                                  type: number
+                                  format: double
+                                  example: 1.2
+                                rating:
+                                  type: number
+                                  format: double
+                                  example: 4.8
+                                vehicle_info:
+                                  type: string
+                                  example: "浙A12345 丰田凯美瑞"
+                                estimated_arrival:
+                                  type: integer
+                                  example: 5
+                          status:
+                            type: string
+                            example: "dispatching"
+
+  /orders/{order_id}/accept:
+    post:
+      tags:
+        - 订单管理
+      summary: 司机接单
+      description: 司机接受订单
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          description: 订单ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - estimated_arrival
+                - current_location
+              properties:
+                estimated_arrival:
+                  type: integer
+                  description: 预估到达时间(分钟)
+                  example: 8
+                current_location:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                      format: double
+                      example: 30.2741
+                    lng:
+                      type: number
+                      format: double
+                      example: 120.1551
+      responses:
+        '200':
+          description: 接单成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          order_id:
+                            type: string
+                            example: "order_123456789"
+                          driver_id:
+                            type: string
+                            example: "driver_001"
+                          status:
+                            type: string
+                            example: "assigned"
+                          estimated_arrival:
+                            type: integer
+                            example: 8
+                          customer_info:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                                example: "张**"
+                              phone:
+                                type: string
+                                example: "138****5678"
+
+  /orders/{order_id}/location:
+    post:
+      tags:
+        - 订单管理
+      summary: 实时位置更新
+      description: 司机更新实时位置信息
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          description: 订单ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - current_location
+              properties:
+                current_location:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                      format: double
+                      example: 30.2650
+                    lng:
+                      type: number
+                      format: double
+                      example: 120.1580
+                heading:
+                  type: number
+                  format: double
+                  description: 方向角
+                  example: 90
+                speed:
+                  type: number
+                  format: double
+                  description: 速度(km/h)
+                  example: 35
+      responses:
+        '200':
+          description: 位置更新成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommonResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          order_id:
+                            type: string
+                            example: "order_123456789"
+                          location_updated:
+                            type: boolean
+                            example: true
+                          estimated_arrival:
+                            type: integer
+                            example: 12
