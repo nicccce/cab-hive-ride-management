@@ -1,0 +1,35 @@
+# docker-compose.env.yaml
+# 本地测试环境搭建
+
+networks:
+  cab-hive-net:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: cab-hive-postgres
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 12345678
+      POSTGRES_DB: cab-hive-db
+      TZ: Asia/Shanghai
+    ports:
+      - "5432:5432"
+    privileged: true
+    restart: always
+    networks:
+      - cab-hive-net
+
+  redis:
+    image: redis:7.0
+    container_name: cab-hive-redis
+    command: --requirepass 12345678  # 设置密码，需与配置文件一致
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "6379:6379"
+    privileged: true
+    restart: always
+    networks:
+      - cab-hive-net

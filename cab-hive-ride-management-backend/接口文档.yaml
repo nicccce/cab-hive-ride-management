@@ -1,0 +1,469 @@
+openapi: 3.0.0
+info:
+  title: Cab Hive Ride Management API
+  version: 1.0.0
+  description: API documentation for the Cab Hive ride management system
+
+servers:
+  - url: http://localhost:8080/api
+    description: Local development server
+
+paths:
+  /auth/wechat/login:
+    post:
+      summary: WeChat User Login
+      description: Authenticate and log in a user via WeChat.
+      operationId: wechatLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+              example:
+                code: 200
+                msg: Login successful
+                data:
+                  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user_id: user_123456
+                  role: customer
+                  expires_in: 7200
+                  user_info:
+                    nickname: 张三
+                    avatar: https://wx.qlogo.cn/...
+                    phone: 138****5678
+                timestamp: 2025-07-16T10:30:00Z
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+  
+  /auth/driver/register:
+    post:
+      summary: Driver Registration
+      description: Register a new driver with license information.
+      operationId: driverRegister
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverRegisterRequest'
+      responses:
+        '200':
+          description: Driver registration submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+              example:
+                code: 200
+                msg: Driver registration submitted
+                data:
+                  status: pending
+                  driver_id: review_123456
+                  estimated_review_time: 24小时内
+                timestamp: 2025-07-16T10:30:00Z
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /auth/admin/login:
+    post:
+      summary: Admin Login
+      description: Authenticate an admin user.
+      operationId: adminLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
+      responses:
+        '200':
+          description: Admin login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+              example:
+                code: 200
+                msg: Admin login successful
+                data:
+                  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user_id: admin_001
+                  role: admin
+                  expires_in: 7200
+                  permissions:
+                    - user_manage
+                    - vehicle_audit
+                    - order_manage
+                timestamp: 2025-07-16T10:30:00Z
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+  
+  /auth/refresh:
+    post:
+      summary: Refresh Token
+      description: Renew JWT token using a refresh token.
+      operationId: refreshToken
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+              example:
+                code: 200
+                msg: Token refreshed successfully
+                data:
+                  token: new_jwt_token
+                  expires_in: 7200
+                timestamp: 2025-07-16T10:30:00Z
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+ 
+ /admin/driver/reviews:
+   get:
+     summary: List Driver Reviews
+     description: Get a list of driver reviews for admin approval.
+     operationId: listDriverReviews
+     security:
+       - BearerAuth: []
+     parameters:
+       - name: page
+         in: query
+         schema:
+           type: integer
+           default: 1
+         description: Page number
+       - name: page_size
+         in: query
+         schema:
+           type: integer
+           default: 10
+         description: Number of items per page
+       - name: status
+         in: query
+         schema:
+           type: string
+         description: Filter by status (pending, approved, rejected)
+       - name: action_type
+         in: query
+         schema:
+           type: string
+         description: Filter by action type (register, update)
+     responses:
+       '200':
+         description: Successful response
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+ 
+ /admin/driver/review/{id}:
+   get:
+     summary: Get Driver Review
+     description: Get details of a specific driver review.
+     operationId: getDriverReview
+     security:
+       - BearerAuth: []
+     parameters:
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: integer
+     responses:
+       '200':
+         description: Successful response
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+       '404':
+         description: Review not found
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+ 
+ /admin/driver/review/{id}/approve:
+   post:
+     summary: Approve Driver Review
+     description: Approve a driver registration or update request.
+     operationId: approveDriverReview
+     security:
+       - BearerAuth: []
+     parameters:
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: integer
+     requestBody:
+       required: false
+       content:
+         application/json:
+           schema:
+             type: object
+             properties:
+               comment:
+                 type: string
+                 description: Admin comment
+     responses:
+       '200':
+         description: Successful response
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+       '404':
+         description: Review not found
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+ 
+ /admin/driver/review/{id}/reject:
+   post:
+     summary: Reject Driver Review
+     description: Reject a driver registration or update request.
+     operationId: rejectDriverReview
+     security:
+       - BearerAuth: []
+     parameters:
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: integer
+     requestBody:
+       required: true
+       content:
+         application/json:
+           schema:
+             type: object
+             properties:
+               comment:
+                 type: string
+                 description: Admin comment
+             required:
+               - comment
+     responses:
+       '200':
+         description: Successful response
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+       '404':
+         description: Review not found
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    WechatLoginRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Temporary WeChat login code
+          example: wx_temp_code_123
+        encryptedData:
+          type: string
+          description: Encrypted user data
+          example: encrypted_user_data
+        iv:
+          type: string
+          description: Initialization vector
+          example: initialization_vector
+      required:
+        - code
+        - encryptedData
+        - iv
+    
+    DriverRegisterRequest:
+      type: object
+      properties:
+        license_number:
+          type: string
+          description: Driver's license number
+          example: 330100199001011234
+        license_image:
+          type: string
+          description: Base64 encoded driver license image
+          example: data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...
+        name:
+          type: string
+          description: Driver's name
+          example: 李四
+        phone:
+          type: string
+          description: Driver's phone number
+          example: 139****8765
+      required:
+        - license_number
+        - license_image
+        - name
+        - phone
+    
+    AdminLoginRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          description: Admin phone number
+          example: 13800138000
+        password:
+          type: string
+          description: Admin password
+          example: admin123456
+      required:
+        - phone
+        - password
+    
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          description: Refresh token for renewing JWT
+          example: refresh_token_string
+      required:
+        - refresh_token
+    
+    StandardResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+        msg:
+          type: string
+          description: Response message
+        data:
+          type: object
+          description: Response data
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+      required:
+        - code
+        - msg
+        - timestamp
+    
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Error code
+        msg:
+          type: string
+          description: Error message
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+      required:
+       - code
+       - msg
+       - timestamp
+   
+   DriverReview:
+     type: object
+     properties:
+       id:
+         type: integer
+       created_at:
+         type: string
+         format: date-time
+       updated_at:
+         type: string
+         format: date-time
+       open_id:
+         type: string
+       license_number:
+         type: string
+       name:
+         type: string
+       phone:
+         type: string
+       license_image_url:
+         type: string
+       status:
+         type: string
+       comment:
+         type: string
+       action_type:
+         type: string
+       driver_id:
+         type: integer
+
+ securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
