@@ -18,22 +18,5 @@ func (u *ModuleAdmin) InitRouter(r *gin.RouterGroup) {
 	// 添加管理员权限验证中间件，只有角色ID为3的管理员才能访问
 	adminGroup.Use(middleware.Auth(3))
 	{
-		// 查询所有用户
-		adminGroup.GET("/users", GetAllUsers)
-		
-		// 查询所有司机
-		adminGroup.GET("/drivers", GetAllDrivers)
-		
-		// 查询待审核司机信息
-		adminGroup.GET("/drivers/pending", GetPendingDrivers)
-		
-		// 查询待审核车辆信息
-		adminGroup.GET("/vehicles/pending", GetPendingVehicles)
-		
-		// 审核司机信息
-		adminGroup.POST("/drivers/review/:id", ReviewDriver)
-		
-		// 审核车辆信息
-		adminGroup.POST("/vehicles/review/:id", ReviewVehicle)
 	}
 }

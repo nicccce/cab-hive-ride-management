@@ -2,13 +2,13 @@ import { defineConfig, type UserConfigExport } from '@tarojs/cli'
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
 import devConfig from './dev'
 import prodConfig from './prod'
-import vitePluginImp from 'vite-plugin-imp'
+
 // https://taro-docs.jd.com/docs/next/config#defineconfig-辅助函数
-export default defineConfig<'vite'>(async (merge, { command, mode }) => {
-  const baseConfig: UserConfigExport<'vite'> = {
+export default defineConfig(async (merge, { command, mode }) => {
+  const baseConfig: UserConfigExport = {
     projectName: 'cab-hive-ride-management-app',
-    date: '2025-8-18',
-    designWidth: 375,
+    date: '2025-1-23',
+    designWidth: 750,
     deviceRatio: {
       640: 2.34 / 2,
       750: 1,
@@ -17,7 +17,7 @@ export default defineConfig<'vite'>(async (merge, { command, mode }) => {
     },
     sourceRoot: 'src',
     outputRoot: 'dist',
-    plugins: ['@tarojs/plugin-html'],
+    plugins: [],
     defineConstants: {
     },
     copy: {
@@ -28,26 +28,26 @@ export default defineConfig<'vite'>(async (merge, { command, mode }) => {
     },
     framework: 'react',
     compiler: {
-      vitePlugins: [vitePluginImp({
-        libList: [
-          {
-            libName: '@nutui/nutui-react-taro',
-            style: (name) => {
-              return `@nutui/nutui-react-taro/dist/esm/${name}/style/css`
-            },
-            replaceOldImport: false,
-            camel2DashComponentName: false,
-          }
-        ]
-      })],
-      type: 'vite'
+      type: 'webpack5',
+      prebundle: {
+        enable: false
+      }
+    },
+    cache: {
+      enable: false // Webpack 持久化缓存配置，建议开启。默认配置请参考：https://docs.taro.zone/docs/config-detail#cache
     },
     mini: {
       postcss: {
         pxtransform: {
           enable: true,
           config: {
-            selectorBlackList: ['nut-']
+
+          }
+        },
+        url: {
+          enable: true,
+          config: {
+            limit: 1024 // 设定转换尺寸上限
           }
         },
         cssModules: {
@@ -58,20 +58,19 @@ export default defineConfig<'vite'>(async (merge, { command, mode }) => {
           }
         }
       },
+      webpackChain(chain) {
+        chain.resolve.plugin('tsconfig-paths').use(TsconfigPathsPlugin)
+      }
     },
     h5: {
       publicPath: '/',
       staticDirectory: 'static',
-
-      miniCssExtractPluginOption: {
-        ignoreOrder: true,
-        filename: 'css/[name].[hash].css',
-        chunkFilename: 'css/[name].[chunkhash].css'
-      },
+      esnextModules: ['taroify'],
       postcss: {
         autoprefixer: {
           enable: true,
-          config: {}
+          config: {
+          }
         },
         cssModules: {
           enable: false, // 默认为 false，如需使用 css modules 功能，则设为 true
@@ -81,6 +80,9 @@ export default defineConfig<'vite'>(async (merge, { command, mode }) => {
           }
         }
       },
+      webpackChain(chain) {
+        chain.resolve.plugin('tsconfig-paths').use(TsconfigPathsPlugin)
+      }
     },
     rn: {
       appName: 'taroDemo',

@@ -22,10 +22,8 @@ type Config struct {
 
 // OSS 配置
 type OSS struct {
-	Endpoint        string `envconfig:"OSS_ENDPOINT" yaml:"endpoint"`
-	AccessKeyID     string `envconfig:"OSS_ACCESS_KEY_ID" yaml:"access_key_id"`
-	AccessKeySecret string `envconfig:"OSS_ACCESS_KEY_SECRET" yaml:"access_key_secret"`
-	BucketName      string `envconfig:"OSS_BUCKET_NAME" yaml:"bucket_name"`
+	Endpoint string `envconfig:"OSS_ENDPOINT" yaml:"endpoint"`
+	Token    string `envconfig:"TOKEN" yaml:"token"`
 }
 
 type Postgres struct {

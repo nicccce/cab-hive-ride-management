@@ -4,7 +4,8 @@ type User struct {
 	Model
 	RoleID   int      `gorm:"default:1;not null"`
 	NickName string   `gorm:"type:varchar(20);not null"`
-	OpenID   string   `gorm:"type:varchar(50);uniqueIndex;not null"`
+	AvatarURL string  `gorm:"type:varchar(255)"` // 用户头像URL
+	OpenID   string   `gorm:"type:varchar(50);uniqueIndex:idx_users_open_id;not null"`
 	UserInfo UserInfo `gorm:"type:jsonb"` // UserInfo作为User结构体的成员，并持久化到数据库
 	
 	// Backend-only fields - these are for internal use and not returned to frontend
@@ -15,8 +16,9 @@ type User struct {
 
 // UserInfo 定义返回给前端的用户信息结构体
 type UserInfo struct {
-	Token    string `json:"token"`
-	NickName string `json:"nick_name"`
-	OpenID   string `json:"open_id"`
-	RoleID   int    `json:"role_id"`
+	Token     string `json:"token"`
+	NickName  string `json:"nick_name"`
+	AvatarURL string `json:"avatar_url"`
+	OpenID    string `json:"open_id"`
+	RoleID    int    `json:"role_id"`
 }

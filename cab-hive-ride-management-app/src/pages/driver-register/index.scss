@@ -1,0 +1,129 @@
+.driver-register-page {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.page-header {
+  background: linear-gradient(135deg, #1976d2, #42a5f5);
+  color: white;
+  padding: 60rpx 40rpx 40rpx;
+  text-align: center;
+  
+  .page-title {
+    font-size: 40rpx;
+    font-weight: 600;
+    margin-bottom: 12rpx;
+  }
+  
+  .page-subtitle {
+    font-size: 28rpx;
+    opacity: 0.9;
+  }
+}
+
+.page-content {
+  padding: 40rpx 32rpx;
+}
+
+.form-group {
+  margin-bottom: 32rpx;
+  border-radius: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+  
+  .van-cell-group__title {
+    padding: 32rpx 32rpx 16rpx;
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #333;
+    background: white;
+  }
+  
+  .van-cell {
+    padding: 32rpx;
+    
+    .van-cell__title {
+      font-size: 32rpx;
+      color: #333;
+      min-width: 160rpx;
+    }
+  }
+  
+  .van-field__input {
+    font-size: 32rpx;
+    text-align: right;
+  }
+}
+
+.upload-section {
+  width: 100%;
+  
+  .upload-btn {
+    width: 100%;
+    height: 80rpx;
+    background: #f5f5f5;
+    border: 2rpx dashed #ccc;
+    color: #666;
+    font-size: 28rpx;
+    border-radius: 16rpx;
+    
+    &::after {
+      border: none;
+    }
+  }
+  
+  .uploaded-image {
+    .image-preview {
+      width: 100%;
+      height: 80rpx;
+      background: #e8f5e8;
+      color: #4caf50;
+      font-size: 28rpx;
+      border-radius: 16rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2rpx solid #4caf50;
+    }
+  }
+}
+
+.submit-section {
+  margin-top: 80rpx;
+  
+  .submit-btn {
+    width: 100%;
+    height: 88rpx;
+    background: linear-gradient(45deg, #1976d2, #42a5f5);
+    color: white;
+    border: none;
+    border-radius: 44rpx;
+    font-size: 32rpx;
+    font-weight: 500;
+    margin-bottom: 60rpx;
+    
+    &::after {
+      border: none;
+    }
+  }
+  
+  .tips {
+    background: white;
+    padding: 32rpx;
+    border-radius: 24rpx;
+    box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+    
+    .tips-title {
+      font-size: 32rpx;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 16rpx;
+    }
+    
+    .tips-content {
+      font-size: 28rpx;
+      color: #666;
+      line-height: 1.6;
+    }
+  }
+}

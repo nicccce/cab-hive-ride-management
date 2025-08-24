@@ -27,35 +27,10 @@ type WeChatLoginRequest struct {
 	Iv            string `json:"iv" binding:"required"`            // 加密算法的初始向量
 }
 
-// DriverRegisterRequest 定义司机注册请求的结构体
-type DriverRegisterRequest struct {
-	LicenseNumber   string `json:"license_number" binding:"required"`    // 司机的驾照编号
-	LicenseImageURL string `json:"license_image_url" binding:"required"` // 驾照图片URL
-	Name            string `json:"name" binding:"required"`              // 司机姓名
-	Phone           string `json:"phone" binding:"required"`             // 司机电话号码
-}
-
 // AdminLoginRequest 定义管理员登录请求的结构体
 type AdminLoginRequest struct {
 	Phone    string `json:"phone" binding:"required"`    // 管理员电话号码
 	Password string `json:"password" binding:"required"` // 管理员密码
-}
-
-// DriverUpdateRequest 定义管理员更新司机信息的请求结构体
-type DriverUpdateRequest struct {
-	LicenseNumber   string `json:"license_number" binding:"required"`    // 司机的驾照编号
-	Name            string `json:"name" binding:"required"`              // 司机姓名
-	Phone           string `json:"phone" binding:"required"`             // 司机电话号码
-	LicenseImageURL string `json:"license_image_url" binding:"required"` // 驾照图片URL
-	Status          string `json:"status" binding:"required"`            // 状态: pending, approved, rejected
-	Comment         string `json:"comment"`                              // 管理员审核备注
-}
-
-// DriverSelfUpdateRequest 定义司机自我更新信息的请求结构体
-type DriverSelfUpdateRequest struct {
-	Name            string `json:"name"`              // 司机姓名
-	Phone           string `json:"phone"`             // 司机电话号码
-	LicenseImageURL string `json:"license_image_url"` // 驾照图片URL
 }
 
 // RefreshTokenRequest 定义刷新令牌请求的结构体
@@ -76,13 +51,6 @@ type WechatLoginResponse struct {
 	Role      string         `json:"role"`       // 用户角色
 	ExpiresIn int64          `json:"expires_in"` // 过期时间（秒）
 	UserInfo  model.UserInfo `json:"user_info"`  // 用户信息
-}
-
-// DriverRegisterResponse 定义司机注册响应的结构体
-type DriverRegisterResponse struct {
-	Status              string `json:"status"`                // 状态
-	DriverID            string `json:"driver_id"`             // 司机ID
-	EstimatedReviewTime string `json:"estimated_review_time"` // 预计审核时间
 }
 
 // AdminLoginResponse 定义管理员登录响应的结构体
@@ -117,6 +85,9 @@ type WeChatSession struct {
 	ErrCode    int    `json:"errcode"`
 	ErrMsg     string `json:"errmsg"`
 }
+
+// DefaultAvatarURL 默认头像URL
+const DefaultAvatarURL = "https://avatars.githubusercontent.com/u/161929724"
 
 // WeChatLogin 处理微信登录请求
 func WeChatLogin(c *gin.Context) {
@@ -183,10 +154,16 @@ func WeChatLogin(c *gin.Context) {
 			NickName: wechatUserInfo.NickName,
 			OpenID:   wechatUserInfo.OpenID,
 			UserInfo: model.UserInfo{ // 初始化UserInfo
-				Token:    token,
-				NickName: wechatUserInfo.NickName,
-				OpenID:   wechatUserInfo.OpenID,
-				RoleID:   1,
+				Token:     token,
+				NickName:  wechatUserInfo.NickName,
+				AvatarURL: func() string {
+					if wechatUserInfo.AvatarURL != "" {
+						return wechatUserInfo.AvatarURL
+					}
+					return DefaultAvatarURL
+				}(),
+				OpenID: wechatUserInfo.OpenID,
+				RoleID: 1,
 			},
 			SessionKey: session.SessionKey, // Store session key for backend use
 			UnionID:    session.UnionID,    // Store union ID for backend use
@@ -200,7 +177,14 @@ func WeChatLogin(c *gin.Context) {
 	} else {
 		// 更新现有用户信息
 		user.NickName = wechatUserInfo.NickName
+		user.AvatarURL = func() string {
+			if wechatUserInfo.AvatarURL != "" {
+				return wechatUserInfo.AvatarURL
+			}
+			return DefaultAvatarURL
+		}()
 		user.UserInfo.NickName = wechatUserInfo.NickName
+		user.UserInfo.AvatarURL = user.AvatarURL
 		user.UserInfo.Token = token
 		user.SessionKey = session.SessionKey
 		user.UnionID = session.UnionID
@@ -394,284 +378,4 @@ func pkcs7Unpad(data []byte, blockSize int) ([]byte, error) {
 	return data[:len(data)-padding], nil
 }
 
-// DriverRegister 处理司机注册请求
-func DriverRegister(c *gin.Context) {
-	// 定义请求结构体并绑定 JSON 数据
-	var req DriverRegisterRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Error("绑定司机注册请求失败", "error", err)
-		response.Fail(c, response.ErrInvalidRequest.WithOrigin(err))
-		return
-	}
 
-	// 从上下文中获取载荷
-	payloadInterface, exists := c.Get("payload")
-	if !exists {
-		log.Error("无法获取载荷信息")
-		response.Fail(c, response.ErrTokenInvalid)
-		return
-	}
-
-	payload, ok := payloadInterface.(*jwt.Claims)
-	if !ok {
-		log.Error("载荷类型错误")
-		response.Fail(c, response.ErrTokenInvalid)
-		return
-	}
-
-	// 检查驾照编号是否已存在
-	var existingDriver model.Driver
-	err := database.DB.Where("license_number = ?", req.LicenseNumber).First(&existingDriver).Error
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		log.Error("数据库查询失败", "error", err)
-		response.Fail(c, response.ErrDatabase.WithOrigin(err))
-		return
-	}
-
-	// 如果驾照编号已存在，返回错误
-	if err == nil {
-		log.Error("驾照编号已存在", "license_number", req.LicenseNumber)
-		response.Fail(c, response.ErrAlreadyExists.WithTips("驾照编号已存在"))
-		return
-	}
-
-	// 删除该用户已有的待审核记录
-	database.DB.Where("open_id = ? AND status = ?", payload.OpenID, "pending").Delete(&model.DriverReview{})
-
-	// 创建司机审核记录而不是直接创建司机记录
-	driverReview := model.DriverReview{
-		OpenID:          payload.OpenID,
-		LicenseNumber:   req.LicenseNumber,
-		Name:            req.Name,
-		Phone:           req.Phone,
-		LicenseImageURL: req.LicenseImageURL,
-		Status:          "pending",
-		ActionType:      "register",
-	}
-
-	if err := database.DB.Create(&driverReview).Error; err != nil {
-		log.Error("创建司机审核记录失败", "error", err)
-		response.Fail(c, response.ErrDatabase.WithOrigin(err))
-		return
-	}
-
-	// 构造响应数据
-	resp := DriverRegisterResponse{
-		Status:              "pending",
-		DriverID:            fmt.Sprintf("review_%d", driverReview.ID),
-		EstimatedReviewTime: "24小时内",
-	}
-
-	// 返回成功响应
-	log.Info("司机注册提交成功，等待审核", "review_id", driverReview.ID)
-	response.Success(c, resp)
-}
-
-// DriverSelfUpdateHandler 处理司机自我更新信息请求
-func DriverSelfUpdateHandler(c *gin.Context) {
-	// 解析请求参数
-	var req DriverSelfUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.ErrInvalidRequest.WithOrigin(err))
-		return
-	}
-
-	// 从上下文中获取载荷
-	payloadInterface, exists := c.Get("payload")
-	if !exists {
-		log.Error("无法获取载荷信息")
-		response.Fail(c, response.ErrTokenInvalid)
-		return
-	}
-
-	payload, ok := payloadInterface.(*jwt.Claims)
-	if !ok {
-		log.Error("载荷类型错误")
-		response.Fail(c, response.ErrTokenInvalid)
-		return
-	}
-
-	// 查找司机
-	var driver model.Driver
-	if err := database.DB.Where("open_id = ?", payload.OpenID).First(&driver).Error; err != nil {
-		response.Fail(c, response.ErrNotFound)
-		return
-	}
-
-	// 删除该用户已有的待审核记录
-	database.DB.Where("open_id = ? AND status = ?", payload.OpenID, "pending").Delete(&model.DriverReview{})
-
-	// 创建司机信息更新审核记录
-	driverReview := model.DriverReview{
-		OpenID:          payload.OpenID,
-		LicenseNumber:   driver.LicenseNumber, // 保持原有驾照编号
-		Name:            req.Name,
-		Phone:           req.Phone,
-		LicenseImageURL: req.LicenseImageURL,
-		Status:          "pending",
-		ActionType:      "update",
-		DriverID:        driver.ID, // 关联到现有司机记录
-	}
-
-	// 如果字段为空，则使用原有值
-	if req.Name == "" {
-		driverReview.Name = driver.Name
-	}
-	if req.Phone == "" {
-		driverReview.Phone = driver.Phone
-	}
-	if req.LicenseImageURL == "" {
-		driverReview.LicenseImageURL = driver.LicenseImageURL
-	}
-
-	// 保存审核记录
-	if err := database.DB.Create(&driverReview).Error; err != nil {
-		response.Fail(c, response.ErrDatabase.WithOrigin(err))
-		return
-	}
-
-	// 返回成功响应
-	response.Success(c, nil)
-}
-
-// UserResponse 定义用户信息响应的结构体
-type UserResponse struct {
-	ID       uint   `json:"id"`
-	RoleID   int    `json:"role_id"`
-	NickName string `json:"nick_name"`
-	OpenID   string `json:"open_id"`
-}
-
-// DriverResponse 定义司机信息响应的结构体
-type DriverResponse struct {
-	ID              uint   `json:"id"`
-	OpenID          string `json:"open_id"`
-	LicenseNumber   string `json:"license_number"`
-	Name            string `json:"name"`
-	Phone           string `json:"phone"`
-	LicenseImageURL string `json:"license_image_url"`
-	Status          string `json:"status"`
-}
-
-// GetAllUsers 处理查询所有用户请求
-func GetAllUsers(c *gin.Context) {
-	// 获取查询参数
-	page := c.DefaultQuery("page", "1")
-	pageSize := c.DefaultQuery("page_size", "10")
-
-	// 解析分页参数
-	pageNum := 1
-	size := 10
-	fmt.Sscanf(page, "%d", &pageNum)
-	fmt.Sscanf(pageSize, "%d", &size)
-
-	// 构建查询条件
-	query := database.DB.Model(&model.User{})
-
-	// 计算总数
-	var total int64
-	query.Count(&total)
-
-	// 计算偏移量
-	offset := (pageNum - 1) * size
-
-	// 查询用户列表
-	var users []model.User
-	if err := query.Offset(offset).Limit(size).Find(&users).Error; err != nil {
-		log.Error("查询用户列表失败", "error", err)
-		response.Fail(c, response.ErrDatabase.WithOrigin(err))
-		return
-	}
-
-	// 转换为响应格式
-	userList := make([]UserResponse, len(users))
-	for i, u := range users {
-		userList[i] = UserResponse{
-			ID:       u.ID,
-			RoleID:   u.RoleID,
-			NickName: u.NickName,
-			OpenID:   u.OpenID,
-		}
-	}
-
-	// 计算总页数
-	totalPages := int((total + int64(size) - 1) / int64(size))
-
-	// 构造响应数据
-	resp := map[string]interface{}{
-		"users": userList,
-		"pagination": map[string]interface{}{
-			"current_page": pageNum,
-			"page_size":    size,
-			"total_count":  total,
-			"total_pages":  totalPages,
-		},
-	}
-
-	// 返回成功响应
-	log.Info("查询用户列表成功", "total", total)
-	response.Success(c, resp)
-}
-
-// GetAllDrivers 处理查询所有司机请求
-func GetAllDrivers(c *gin.Context) {
-	// 获取查询参数
-	page := c.DefaultQuery("page", "1")
-	pageSize := c.DefaultQuery("page_size", "10")
-
-	// 解析分页参数
-	pageNum := 1
-	size := 10
-	fmt.Sscanf(page, "%d", &pageNum)
-	fmt.Sscanf(pageSize, "%d", &size)
-
-	// 构建查询条件
-	query := database.DB.Model(&model.Driver{})
-
-	// 计算总数
-	var total int64
-	query.Count(&total)
-
-	// 计算偏移量
-	offset := (pageNum - 1) * size
-
-	// 查询司机列表
-	var drivers []model.Driver
-	if err := query.Offset(offset).Limit(size).Find(&drivers).Error; err != nil {
-		log.Error("查询司机列表失败", "error", err)
-		response.Fail(c, response.ErrDatabase.WithOrigin(err))
-		return
-	}
-
-	// 转换为响应格式
-	driverList := make([]DriverResponse, len(drivers))
-	for i, d := range drivers {
-		driverList[i] = DriverResponse{
-			ID:              d.ID,
-			OpenID:          d.OpenID,
-			LicenseNumber:   d.LicenseNumber,
-			Name:            d.Name,
-			Phone:           d.Phone,
-			LicenseImageURL: d.LicenseImageURL,
-			Status:          d.Status,
-		}
-	}
-
-	// 计算总页数
-	totalPages := int((total + int64(size) - 1) / int64(size))
-
-	// 构造响应数据
-	resp := map[string]interface{}{
-		"drivers": driverList,
-		"pagination": map[string]interface{}{
-			"current_page": pageNum,
-			"page_size":    size,
-			"total_count":  total,
-			"total_pages":  totalPages,
-		},
-	}
-
-	// 返回成功响应
-	log.Info("查询司机列表成功", "total", total)
-	response.Success(c, resp)
-}

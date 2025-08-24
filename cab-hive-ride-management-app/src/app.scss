@@ -1,0 +1,123 @@
+page {
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
+}
+
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 200rpx 0;
+  box-sizing: border-box;
+}
+
+/* 全局样式 */
+.page {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 通用按钮样式 */
+.btn-primary {
+  background: linear-gradient(45deg, #1976d2, #42a5f5);
+  border: none;
+  color: white;
+  border-radius: 24rpx;
+  font-size: 32rpx;
+}
+
+.btn-secondary {
+  background: #f5f5f5;
+  border: 2rpx solid #e0e0e0;
+  color: #666;
+  border-radius: 24rpx;
+  font-size: 32rpx;
+}
+
+/* 卡片样式 */
+.card {
+  background: white;
+  border-radius: 24rpx;
+  margin: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+  padding: 32rpx 32rpx 16rpx;
+  border-bottom: 2rpx solid #f5f5f5;
+}
+
+.card-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.card-content {
+  padding: 32rpx;
+}
+
+/* 列表项样式 */
+.list-item {
+  display: flex;
+  align-items: center;
+  padding: 32rpx;
+  background: white;
+  border-bottom: 2rpx solid #f5f5f5;
+  transition: background-color 0.2s;
+}
+
+.list-item:active {
+  background-color: #f5f5f5;
+}
+
+.list-item-icon {
+  width: 48rpx;
+  height: 48rpx;
+  margin-right: 24rpx;
+  color: #1976d2;
+}
+
+.list-item-content {
+  flex: 1;
+}
+
+.list-item-title {
+  font-size: 32rpx;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.list-item-desc {
+  font-size: 28rpx;
+  color: #999;
+}
+
+.list-item-arrow {
+  width: 24rpx;
+  height: 24rpx;
+  color: #ccc;
+}
+
+/* 状态样式 */
+.status-pending {
+  color: #ff9800;
+}
+
+.status-approved {
+  color: #4caf50;
+}
+
+.status-rejected {
+  color: #f44336;
+}
+
+.status-banned {
+  color: #f44336;
+}

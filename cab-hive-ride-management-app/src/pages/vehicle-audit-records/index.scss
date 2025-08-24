@@ -1,0 +1,80 @@
+.vehicle-audit-records-page {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400rpx;
+  
+  .loading-text {
+    margin-top: 32rpx;
+    font-size: 28rpx;
+    color: #999;
+  }
+}
+
+.page-header {
+  background: linear-gradient(135deg, #673ab7, #9c27b0);
+  color: white;
+  padding: 60rpx 40rpx 40rpx;
+  text-align: center;
+  
+  .page-title {
+    font-size: 40rpx;
+    font-weight: 600;
+    margin-bottom: 12rpx;
+  }
+  
+  .page-subtitle {
+    font-size: 28rpx;
+    opacity: 0.9;
+  }
+}
+
+.page-content {
+  padding: 40rpx 32rpx;
+}
+
+.records-list {
+  .record-card {
+    margin-bottom: 32rpx;
+    border-radius: 24rpx;
+    overflow: hidden;
+    box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+    
+    .van-cell-group__title {
+      padding: 32rpx 32rpx 16rpx;
+      font-size: 32rpx;
+      font-weight: 600;
+      color: #333;
+      background: white;
+    }
+    
+    .van-cell {
+      padding: 32rpx;
+      
+      .van-cell__title {
+        font-size: 32rpx;
+        color: #333;
+      }
+      
+      .van-cell__value {
+        font-size: 30rpx;
+        color: #666;
+      }
+    }
+  }
+}
+
+.comment-cell {
+  .van-cell__value {
+    color: #ff9800 !important;
+    text-align: right;
+    max-width: 400rpx;
+    word-break: break-all;
+  }
+}

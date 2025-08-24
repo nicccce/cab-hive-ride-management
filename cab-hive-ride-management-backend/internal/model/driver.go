@@ -4,9 +4,9 @@ package model
 type Driver struct {
 	Model
 	OpenID          string `gorm:"type:varchar(50);index"`                // 用户OpenID
-	LicenseNumber   string `gorm:"type:varchar(50);uniqueIndex;not null"` // 驾照编号
+	LicenseNumber   string `gorm:"type:varchar(50);uniqueIndex:idx_drivers_license_number;not null"` // 驾照编号
 	Name            string `gorm:"type:varchar(50);not null"`             // 司机姓名
 	Phone           string `gorm:"type:varchar(20);not null"`             // 电话号码
 	LicenseImageURL string `gorm:"type:text"`                             // 驾照图片URL
-	Status          string `gorm:"type:varchar(20);default:'pending'"`    // 状态: pending, approved, rejected
+	Status          string `gorm:"type:varchar(20);default:'pending'"`    // 状态: pending, approved, rejected, banned
 }

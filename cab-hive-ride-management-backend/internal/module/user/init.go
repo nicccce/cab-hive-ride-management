@@ -1,0 +1,23 @@
+package user
+
+import (
+	"cab-hive/internal/global/logger"
+	"log/slog"
+)
+
+var log *slog.Logger
+
+type ModuleUser struct{}
+
+func (u *ModuleUser) GetName() string {
+	return "User"
+}
+
+func (u *ModuleUser) Init() {
+	log = logger.New("User")
+}
+
+func selfInit() {
+	u := &ModuleUser{}
+	u.Init()
+}

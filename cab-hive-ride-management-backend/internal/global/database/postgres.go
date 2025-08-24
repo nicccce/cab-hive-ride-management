@@ -9,7 +9,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"gorm.io/gorm/schema"
 )
 
 var DB *gorm.DB
@@ -34,7 +33,7 @@ func Init() {
 		config.Get().Postgres.Port,
 	)
 	gormConfig := &gorm.Config{
-		NamingStrategy: schema.NamingStrategy{SingularTable: true}, // 还是单数表名好
+		//NamingStrategy: schema.NamingStrategy{SingularTable: true}, // 还是单数表名好
 	}
 
 	switch config.Get().Mode {

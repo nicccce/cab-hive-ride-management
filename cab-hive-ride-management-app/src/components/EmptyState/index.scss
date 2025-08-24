@@ -1,0 +1,32 @@
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 40rpx;
+  text-align: center;
+  
+  .empty-image {
+    width: 200rpx;
+    height: 160rpx;
+    margin-bottom: 32rpx;
+    opacity: 0.6;
+  }
+  
+  .empty-title {
+    font-size: 32rpx;
+    color: #999;
+    margin-bottom: 16rpx;
+  }
+  
+  .empty-description {
+    font-size: 28rpx;
+    color: #bbb;
+    line-height: 1.5;
+    margin-bottom: 40rpx;
+  }
+  
+  .empty-actions {
+    margin-top: 32rpx;
+  }
+}

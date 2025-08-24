@@ -25,11 +25,5 @@ func (u *ModuleAuth) InitRouter(r *gin.RouterGroup) {
 	{
 		// 注册令牌刷新端点，处理令牌刷新请求
 		authGroup.POST("/refresh", RefreshToken)
-
-		// 注册司机注册端点，处理司机注册请求
-		authGroup.POST("/driver/register", DriverRegister)
-
-		// 注册司机自我更新信息端点，处理司机自我更新信息请求
-		authGroup.POST("/driver/self-update", DriverSelfUpdateHandler)
 	}
 }
