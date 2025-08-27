@@ -2,8 +2,6 @@ import Taro from '@tarojs/taro'
 import { LBS_CONFIG } from '../config/api'
 import QQMapWX from '../libs/qqmap-wx-jssdk.js';
 
-const chooseLocation = requirePlugin('chooseLocation')
-
 // 导航到位置选择插件
 export const navigateToLocationPlugin = async (options = {}) => {
   const { key, referer, category } = LBS_CONFIG
@@ -32,11 +30,13 @@ export const navigateToLocationPlugin = async (options = {}) => {
 
 // 获取选点结果
 export const getLocationResult = () => {
+  const chooseLocation = requirePlugin('chooseLocation')
   return chooseLocation.getLocation()
 }
 
 // 清除选点数据
 export const clearLocationData = () => {
+  const chooseLocation = requirePlugin('chooseLocation')
   chooseLocation.setLocation(null)
 }
 
