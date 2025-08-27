@@ -315,24 +315,45 @@ func GetAllDrivers(c *gin.Context) {
 
 // GetDriver 处理查询司机信息请求
 func GetDriver(c *gin.Context) {
+	// 从上下文中获取用户信息
+	payload, exists := c.Get("payload")
+	if !exists {
+		log.Error("无法获取用户信息")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 断言 payload 为 jwt.Claims 类型
+	claims, ok := payload.(*jwt.Claims)
+	if !ok {
+		log.Error("用户信息类型错误")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
 
 	// 获取要查询的司机ID参数
-	driverID := c.Param("id")
+	DriverID := c.Param("id")
 
 	// 查询司机信息
 	var driver model.Driver
 	query := database.DB.Model(&model.Driver{})
 
-	// 允许所有用户查看司机信息
-	// 移除了权限检查，任何登录用户都可以查看司机信息
-
-	// 如果提供了司机ID参数，则添加ID查询条件
-	if driverID != "" {
-		query = query.Where("id = ?", driverID)
+	// 如果没有传id参数，则查询当前用户作为司机的信息
+	if DriverID == "" {
+		query = query.Where("open_id = ?", claims.OpenID)
+	} else {
+		// 如果提供了司机ID参数，则添加ID查询条件
+		query = query.Where("id = ?", DriverID)
 	}
 
 	// 执行查询
 	if err := query.First(&driver).Error; err != nil {
+		// 如果没有找到记录，返回空数据而不是错误
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Info("未找到司机信息")
+			response.Success(c, nil)
+			return
+		}
 		log.Error("查询司机信息失败", "error", err)
 		response.Fail(c, response.ErrDatabase.WithOrigin(err))
 		return
@@ -357,8 +378,8 @@ func GetDriver(c *gin.Context) {
 // BanDriver 处理封禁司机请求
 func BanDriver(c *gin.Context) {
 	// 获取要封禁的司机ID参数
-	driverID := c.Param("id")
-	if driverID == "" {
+	DriverID := c.Param("id")
+	if DriverID == "" {
 		log.Error("司机ID参数不能为空")
 		response.Fail(c, response.ErrInvalidRequest)
 		return
@@ -366,22 +387,22 @@ func BanDriver(c *gin.Context) {
 
 	// 更新司机状态为 banned
 	var driver model.Driver
-	if err := database.DB.Model(&driver).Where("id = ?", driverID).Update("status", "banned").Error; err != nil {
+	if err := database.DB.Model(&driver).Where("id = ?", DriverID).Update("status", "banned").Error; err != nil {
 		log.Error("封禁司机失败", "error", err)
 		response.Fail(c, response.ErrDatabase.WithOrigin(err))
 		return
 	}
 
 	// 返回成功响应
-	log.Info("封禁司机成功", "driver_id", driverID)
+	log.Info("封禁司机成功", "driver_id", DriverID)
 	response.Success(c, nil)
 }
 
 // UnbanDriver 处理解封司机请求
 func UnbanDriver(c *gin.Context) {
 	// 获取要解封的司机ID参数
-	driverID := c.Param("id")
-	if driverID == "" {
+	DriverID := c.Param("id")
+	if DriverID == "" {
 		log.Error("司机ID参数不能为空")
 		response.Fail(c, response.ErrInvalidRequest)
 		return
@@ -389,14 +410,14 @@ func UnbanDriver(c *gin.Context) {
 
 	// 更新司机状态为 approved
 	var driver model.Driver
-	if err := database.DB.Model(&driver).Where("id = ?", driverID).Update("status", "approved").Error; err != nil {
+	if err := database.DB.Model(&driver).Where("id = ?", DriverID).Update("status", "approved").Error; err != nil {
 		log.Error("解封司机失败", "error", err)
 		response.Fail(c, response.ErrDatabase.WithOrigin(err))
 		return
 	}
 
 	// 返回成功响应
-	log.Info("解封司机成功", "driver_id", driverID)
+	log.Info("解封司机成功", "driver_id", DriverID)
 	response.Success(c, nil)
 }
 
@@ -512,7 +533,7 @@ func GetPendingDriver(c *gin.Context) {
 
 	// 查找司机审核记录
 	var driverReview model.DriverReview
-	query := database.DB.Where("id = ? AND status = ?", reviewIDNum, "pending")
+	query := database.DB.Where("id = ?", reviewIDNum)
 
 	// 如果不是管理员，只查询当前用户的审核记录
 	if claims.RoleID != 3 {
@@ -748,6 +769,26 @@ func ReviewDriver(c *gin.Context) {
 				return
 			}
 		}
+
+		// 同步更新用户的角色ID为2（司机）
+		var user model.User
+		if err := database.DB.Where("open_id = ?", driverReview.OpenID).First(&user).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				log.Error("用户记录不存在", "open_id", driverReview.OpenID)
+				response.Fail(c, response.ErrNotFound)
+			} else {
+				log.Error("数据库查询失败", "error", err)
+				response.Fail(c, response.ErrDatabase.WithOrigin(err))
+			}
+			return
+		}
+
+		user.RoleID = 2 // 设置为司机角色
+		if err := database.DB.Save(&user).Error; err != nil {
+			log.Error("更新用户角色ID失败", "error", err)
+			response.Fail(c, response.ErrDatabase.WithOrigin(err))
+			return
+		}
 	} else if req.Action == "rejected" {
 		// 如果审核拒绝，不需要创建或更新司机记录
 		// 只需要更新审核记录状态和备注
@@ -764,11 +805,11 @@ func ReviewDriver(c *gin.Context) {
 // GetDriverVehicles 处理获取司机名下车辆列表请求
 func GetDriverVehicles(c *gin.Context) {
 	// 获取司机ID
-	driverID := c.Param("id")
+	DriverID := c.Param("id")
 
 	// 查找司机
 	var driver model.Driver
-	if err := database.DB.Where("id = ?", driverID).First(&driver).Error; err != nil {
+	if err := database.DB.Where("id = ?", DriverID).First(&driver).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.Fail(c, response.ErrNotFound)
 		} else {
@@ -787,21 +828,44 @@ func GetDriverVehicles(c *gin.Context) {
 	// 转换为响应格式
 	vehicleList := make([]vehicle.VehicleResponse, len(vehicles))
 	for i, v := range vehicles {
+		// 查找司机信息
+		var driver model.Driver
+		driverName := ""
+		driverPhone := ""
+		if err := database.DB.Where("open_id = ?", v.DriverID).First(&driver).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				response.Fail(c, response.ErrDatabase.WithOrigin(err))
+				return
+			}
+			// 如果未找到司机记录，driverName和driverPhone将保持为空字符串
+		} else {
+			driverName = driver.Name
+			driverPhone = driver.Phone
+		}
+
 		vehicleList[i] = vehicle.VehicleResponse{
-			ID:          fmt.Sprintf("vehicle_%d", v.ID),
-			DriverID:    fmt.Sprintf("driver_%d", v.DriverID),
-			PlateNumber: v.PlateNumber,
-			VehicleType: v.VehicleType,
-			Brand:       v.Brand,
-			Model:       v.ModelName,
-			Status:      v.Status,
-			SubmitTime:  v.SubmitTime.Format(time.RFC3339),
+			ID:                fmt.Sprintf("vehicle_%d", v.ID),
+			DriverID:          fmt.Sprintf("driver_%d", v.DriverID),
+			DriverName:        driverName,
+			DriverPhone:       driverPhone,
+			PlateNumber:       v.PlateNumber,
+			VehicleType:       v.VehicleType,
+			Brand:             v.Brand,
+			Model:             v.ModelName,
+			Color:             v.Color,
+			Year:              v.Year,
+			RegistrationImage: v.RegistrationImage,
+			InsuranceExpiry:   v.InsuranceExpiry.Format(time.RFC3339),
+			Status:            v.Status,
+			Comment:           v.Comment,
+			SubmitTime:        v.SubmitTime.Format(time.RFC3339),
 			ReviewTime: func() string {
 				if v.ReviewTime != nil {
 					return v.ReviewTime.Format(time.RFC3339)
 				}
 				return ""
 			}(),
+			Reviewer: v.Reviewer,
 		}
 	}
 

@@ -1,0 +1,175 @@
+.vehicle-info-page {
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 32px 20px;
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  border-radius: 16px;
+  color: white;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+  display: block;
+}
+
+.action-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.add-btn, .audit-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.add-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  
+  &:active {
+    background: #2563eb;
+  }
+}
+
+.audit-btn {
+  background: white;
+  color: #3b82f6;
+  border: 1px solid #3b82f6;
+  
+  &:active {
+    background: #f0f9ff;
+  }
+}
+
+.vehicle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.vehicle-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.vehicle-plate {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.vehicle-info {
+  margin-bottom: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.info-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.edit-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  
+  &:active {
+    background: #2563eb;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.empty-text {
+  font-size: 16px;
+  color: #1f2937;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.empty-tip {
+  font-size: 14px;
+  color: #6b7280;
+  display: block;
+}
+
+.no-permission {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.no-permission-text {
+  font-size: 16px;
+  color: #6b7280;
+  margin-bottom: 24px;
+  display: block;
+}
+
+.back-btn {
+  width: 120px;
+  height: 40px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.loading {
+  padding: 40px;
+  text-align: center;
+  color: #6b7280;
+}

@@ -33,16 +33,23 @@ type VehicleAuditRequest struct {
 
 // VehicleResponse 定义车辆信息响应的结构体
 type VehicleResponse struct {
-	ID          string `json:"id"`           // 车辆ID
-	DriverID    string `json:"driver_id"`    // 司机ID
-	DriverName  string `json:"driver_name"`  // 司机姓名
-	PlateNumber string `json:"plate_number"` // 车牌号码
-	VehicleType string `json:"vehicle_type"` // 车辆类型
-	Brand       string `json:"brand"`        // 车辆品牌
-	Model       string `json:"model"`        // 车辆型号
-	Status      string `json:"status"`       // 状态
-	SubmitTime  string `json:"submit_time"`  // 提交时间
-	ReviewTime  string `json:"review_time"`  // 审核时间
+	ID                string      `json:"id"`                 // 车辆ID
+	DriverID          string      `json:"driver_id"`          // 司机ID
+	DriverName        string      `json:"driver_name"`        // 司机姓名
+	DriverPhone       string      `json:"driver_phone"`       // 司机电话
+	PlateNumber       string      `json:"plate_number"`       // 车牌号码
+	VehicleType       string      `json:"vehicle_type"`       // 车辆类型
+	Brand             string      `json:"brand"`              // 车辆品牌
+	Model             string      `json:"model"`              // 车辆型号
+	Color             string      `json:"color"`              // 车辆颜色
+	Year              int         `json:"year"`               // 制造年份
+	RegistrationImage string      `json:"registration_image"` // 行驶证图片URL
+	InsuranceExpiry   string      `json:"insurance_expiry"`   // 保险到期日期
+	Status            string      `json:"status"`             // 状态
+	Comment           string      `json:"comment"`            // 管理员审核备注
+	SubmitTime        string      `json:"submit_time"`        // 提交时间
+	ReviewTime        string      `json:"review_time"`        // 审核时间
+	Reviewer          string      `json:"reviewer"`           // 审核人
 }
 
 // SubmitVehicle 处理提交车辆信息请求
@@ -77,19 +84,11 @@ func SubmitVehicle(c *gin.Context) {
 	// 检查车牌号码是否已存在
 	var existingVehicle model.Vehicle
 	err = database.DB.Where("plate_number = ?", req.PlateNumber).First(&existingVehicle).Error
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		response.Fail(c, response.ErrDatabase.WithOrigin(err))
-		return
-	}
-
 	// 如果车牌号码已存在，返回错误
 	if err == nil {
 		response.Fail(c, response.ErrAlreadyExists.WithTips("车牌号码已存在"))
 		return
 	}
-
-	// 删除该司机已有的待审核记录
-	database.DB.Where("driver_id = ? AND status = ?", payload.RoleID, "pending").Delete(&model.VehicleReview{})
 
 	// 创建车辆审核记录而不是直接创建车辆记录
 	vehicleReview := model.VehicleReview{
@@ -207,7 +206,7 @@ func GetPendingVehicles(c *gin.Context) {
 			Color:             vr.Color,
 			Year:              vr.Year,
 			RegistrationImage: vr.RegistrationImage,
-			InsuranceExpiry:   vr.InsuranceExpiry.Format(time.RFC3339),
+			InsuranceExpiry:   vr.InsuranceExpiry.Format("2006-01-02"),
 			Status:            vr.Status,
 			Comment:           vr.Comment,
 			SubmitTime:        vr.CreatedAt.Format(time.RFC3339),
@@ -260,7 +259,7 @@ func GetPendingVehicle(c *gin.Context) {
 
 	// 查找车辆审核记录
 	var vehicleReview model.VehicleReview
-	query := database.DB.Where("id = ? AND status = ?", reviewIDNum, "pending")
+	query := database.DB.Where("id = ?", reviewIDNum)
 
 	// 如果不是管理员，只查询当前用户的审核记录
 	if claims.RoleID != 3 {
@@ -289,7 +288,7 @@ func GetPendingVehicle(c *gin.Context) {
 		Color:             vehicleReview.Color,
 		Year:              vehicleReview.Year,
 		RegistrationImage: vehicleReview.RegistrationImage,
-		InsuranceExpiry:   vehicleReview.InsuranceExpiry.Format(time.RFC3339),
+		InsuranceExpiry:   vehicleReview.InsuranceExpiry.Format("2006-01-02"),
 		Status:            vehicleReview.Status,
 		Comment:           vehicleReview.Comment,
 		SubmitTime:        vehicleReview.CreatedAt.Format(time.RFC3339),
@@ -377,7 +376,7 @@ func GetSelfPendingVehicles(c *gin.Context) {
 			Color:             vr.Color,
 			Year:              vr.Year,
 			RegistrationImage: vr.RegistrationImage,
-			InsuranceExpiry:   vr.InsuranceExpiry.Format(time.RFC3339),
+			InsuranceExpiry:   vr.InsuranceExpiry.Format("2006-01-02"),
 			Status:            vr.Status,
 			Comment:           vr.Comment,
 			SubmitTime:        vr.CreatedAt.Format(time.RFC3339),
@@ -591,21 +590,44 @@ func GetVehicles(c *gin.Context) {
 	// 转换为响应格式
 	vehicleList := make([]VehicleResponse, len(vehicles))
 	for i, v := range vehicles {
+		// 查找司机信息
+		var driver model.Driver
+		driverName := ""
+		driverPhone := ""
+		if err := database.DB.Where("open_id = ?", v.DriverID).First(&driver).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				log.Error("数据库查询失败", "error", err)
+				continue // 跳过这个车辆，继续处理下一个
+			}
+			// 如果未找到司机记录，driverName和driverPhone将保持为空字符串
+		} else {
+			driverName = driver.Name
+			driverPhone = driver.Phone
+		}
+
 		vehicleList[i] = VehicleResponse{
-			ID:          fmt.Sprintf("vehicle_%d", v.ID),
-			DriverID:    fmt.Sprintf("driver_%d", v.DriverID),
-			PlateNumber: v.PlateNumber,
-			VehicleType: v.VehicleType,
-			Brand:       v.Brand,
-			Model:       v.ModelName,
-			Status:      v.Status,
-			SubmitTime:  v.SubmitTime.Format(time.RFC3339),
+			ID:                fmt.Sprintf("vehicle_%d", v.ID),
+			DriverID:          fmt.Sprintf("driver_%d", v.DriverID),
+			DriverName:        driverName,
+			DriverPhone:       driverPhone,
+			PlateNumber:       v.PlateNumber,
+			VehicleType:       v.VehicleType,
+			Brand:             v.Brand,
+			Model:             v.ModelName,
+			Color:             v.Color,
+			Year:              v.Year,
+			RegistrationImage: v.RegistrationImage,
+			InsuranceExpiry:   v.InsuranceExpiry.Format("2006-01-02"),
+			Status:            v.Status,
+			Comment:           v.Comment,
+			SubmitTime:        v.SubmitTime.Format(time.RFC3339),
 			ReviewTime: func() string {
 				if v.ReviewTime != nil {
-					return v.ReviewTime.Format(time.RFC3339)
+					return v.ReviewTime.Format("2006-01-02")
 				}
 				return ""
 			}(),
+			Reviewer: v.Reviewer,
 		}
 	}
 
@@ -736,22 +758,45 @@ func GetVehicle(c *gin.Context) {
 	// 允许所有用户查看车辆信息
 	// 移除了权限检查，任何登录用户都可以查看车辆详情
 
+	// 查找司机信息
+	var driver model.Driver
+	driverName := ""
+	driverPhone := ""
+	if err := database.DB.Where("open_id = ?", vehicle.DriverID).First(&driver).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Fail(c, response.ErrDatabase.WithOrigin(err))
+			return
+		}
+		// 如果未找到司机记录，driverName和driverPhone将保持为空字符串
+	} else {
+		driverName = driver.Name
+		driverPhone = driver.Phone
+	}
+
 	// 转换为响应格式
 	resp := VehicleResponse{
-		ID:          fmt.Sprintf("vehicle_%d", vehicle.ID),
-		DriverID:    fmt.Sprintf("driver_%d", vehicle.DriverID),
-		PlateNumber: vehicle.PlateNumber,
-		VehicleType: vehicle.VehicleType,
-		Brand:       vehicle.Brand,
-		Model:       vehicle.ModelName,
-		Status:      vehicle.Status,
-		SubmitTime:  vehicle.SubmitTime.Format(time.RFC3339),
+		ID:                fmt.Sprintf("vehicle_%d", vehicle.ID),
+		DriverID:          fmt.Sprintf("driver_%d", vehicle.DriverID),
+		DriverName:        driverName,
+		DriverPhone:       driverPhone,
+		PlateNumber:       vehicle.PlateNumber,
+		VehicleType:       vehicle.VehicleType,
+		Brand:             vehicle.Brand,
+		Model:             vehicle.ModelName,
+		Color:             vehicle.Color,
+		Year:              vehicle.Year,
+		RegistrationImage: vehicle.RegistrationImage,
+		InsuranceExpiry:   vehicle.InsuranceExpiry.Format("2006-01-02"),
+		Status:            vehicle.Status,
+		Comment:           vehicle.Comment,
+		SubmitTime:        vehicle.SubmitTime.Format(time.RFC3339),
 		ReviewTime: func() string {
 			if vehicle.ReviewTime != nil {
-				return vehicle.ReviewTime.Format(time.RFC3339)
+				return vehicle.ReviewTime.Format("2006-01-02")
 			}
 			return ""
 		}(),
+		Reviewer: vehicle.Reviewer,
 	}
 
 	// 返回成功响应

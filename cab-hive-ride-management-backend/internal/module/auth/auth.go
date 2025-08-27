@@ -101,6 +101,12 @@ func WeChatLogin(c *gin.Context) {
 
 	// 从配置中获取微信小程序的 AppID 和 AppSecret
 	wechatConfig := config.Get().WeChat
+	log.Info("WeChat config loaded",
+		"app_id", wechatConfig.AppID,
+		"app_secret", wechatConfig.AppSecret,
+		"token", wechatConfig.Token,
+		"aes_key", wechatConfig.AESKey)
+	
 	if wechatConfig.AppID == "" || wechatConfig.AppSecret == "" {
 		log.Error("微信配置缺失")
 		response.Fail(c, response.ErrServerInternal.WithOrigin(errors.New("微信配置缺失")))
@@ -154,8 +160,8 @@ func WeChatLogin(c *gin.Context) {
 			NickName: wechatUserInfo.NickName,
 			OpenID:   wechatUserInfo.OpenID,
 			UserInfo: model.UserInfo{ // 初始化UserInfo
-				Token:     token,
-				NickName:  wechatUserInfo.NickName,
+				Token:    token,
+				NickName: wechatUserInfo.NickName,
 				AvatarURL: func() string {
 					if wechatUserInfo.AvatarURL != "" {
 						return wechatUserInfo.AvatarURL
@@ -274,11 +280,33 @@ func RefreshToken(c *gin.Context) {
 		return
 	}
 
-	// 生成新的 JWT 令牌
+	// 从数据库查询最新的用户信息
+	var user model.User
+	err := database.DB.Where("open_id = ?", payload.OpenID).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Error("用户不存在", "open_id", payload.OpenID)
+			response.Fail(c, response.ErrNotFound)
+		} else {
+			log.Error("数据库查询失败", "error", err)
+			response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		}
+		return
+	}
+
+	// 生成新的 JWT 令牌，使用从数据库查询到的最新用户信息
 	newToken := jwt.CreateToken(jwt.Payload{
-		OpenID: payload.OpenID,
-		RoleID: payload.RoleID,
+		OpenID: user.OpenID,
+		RoleID: user.RoleID,
 	})
+
+	// 更新用户信息中的token
+	user.UserInfo.Token = newToken
+	if err := database.DB.Save(&user).Error; err != nil {
+		log.Error("更新用户信息失败", "error", err)
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
 
 	// 构造响应数据
 	resp := TokenResponse{
@@ -287,7 +315,7 @@ func RefreshToken(c *gin.Context) {
 	}
 
 	// 返回成功响应
-	log.Info("令牌刷新成功", "user_id", payload.OpenID)
+	log.Info("令牌刷新成功", "user_id", user.OpenID)
 	response.Success(c, resp)
 }
 
@@ -377,5 +405,3 @@ func pkcs7Unpad(data []byte, blockSize int) ([]byte, error) {
 
 	return data[:len(data)-padding], nil
 }
-
-

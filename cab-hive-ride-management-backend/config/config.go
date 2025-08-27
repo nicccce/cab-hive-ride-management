@@ -16,13 +16,13 @@ type Config struct {
 	Redis    Redis
 	JWT      JWT
 	Log      Log
-	WeChat   WeChat
+	WeChat   WeChat `yaml:"wechat"`
 	OSS      OSS
 }
 
 // OSS 配置
 type OSS struct {
-	Endpoint string `envconfig:"OSS_ENDPOINT" yaml:"endpoint"`
+	Endpoint string `envconfig:"ENDPOINT" yaml:"endpoint"`
 	Token    string `envconfig:"TOKEN" yaml:"token"`
 }
 
@@ -56,8 +56,8 @@ type Log struct {
 }
 
 type WeChat struct {
-	AppID     string `envconfig:"WECHAT_APP_ID" yaml:"app_id"`
-	AppSecret string `envconfig:"WECHAT_APP_SECRET" yaml:"app_secret"`
-	Token     string `envconfig:"WECHAT_TOKEN" yaml:"token"`
-	AESKey    string `envconfig:"WECHAT_AES_KEY" yaml:"aes_key"`
+	AppID     string `envconfig:"APP_ID" yaml:"app_id" mapstructure:"app_id"`
+	AppSecret string `envconfig:"APP_SECRET" yaml:"app_secret" mapstructure:"app_secret"`
+	Token     string `envconfig:"TOKEN" yaml:"token" mapstructure:"token"`
+	AESKey    string `envconfig:"AES_KEY" yaml:"aes_key" mapstructure:"aes_key"`
 }

@@ -467,3 +467,43 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  /image/upload:
+    post:
+      summary: Upload Image
+      description: Upload an image file to the server.
+      operationId: uploadImage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: The image file to upload
+              required:
+                - image
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+              example:
+                code: 200
+                msg: Success
+                data:
+                  image_url: https://example.com/uploaded_image.jpg
+                timestamp: 2025-07-16T10:30:00Z
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

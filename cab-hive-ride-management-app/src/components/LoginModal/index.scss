@@ -1,0 +1,68 @@
+.login-modal {
+  .taroify-popup__content {
+    border-radius: 16px;
+    padding: 0;
+    overflow: hidden;
+  }
+}
+
+.login-content {
+  width: 320px;
+  background: white;
+}
+
+.login-header {
+  padding: 32px 24px 24px;
+  text-align: center;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.login-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.login-subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.login-body {
+  padding: 24px;
+}
+
+.login-btn {
+  width: 100%;
+  height: 48px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:active {
+    background: #2563eb;
+  }
+}
+
+.login-footer {
+  padding: 0 24px 24px;
+}
+
+.login-tips {
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.link {
+  color: #3b82f6;
+  text-decoration: underline;
+}

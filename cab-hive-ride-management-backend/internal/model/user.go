@@ -1,5 +1,11 @@
 package model
 
+import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+)
+
 type User struct {
 	Model
 	RoleID   int      `gorm:"default:1;not null"`
@@ -21,4 +27,27 @@ type UserInfo struct {
 	AvatarURL string `json:"avatar_url"`
 	OpenID    string `json:"open_id"`
 	RoleID    int    `json:"role_id"`
+}
+
+// 实现 sql.Scanner 接口用于从数据库读取数据
+func (u *UserInfo) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("无法转换为字节数组")
+	}
+	
+	return json.Unmarshal(bytes, u)
+}
+
+// 实现 driver.Valuer 接口用于将数据写入数据库
+func (u UserInfo) Value() (driver.Value, error) {
+	if u.Token == "" && u.NickName == "" && u.AvatarURL == "" && u.OpenID == "" && u.RoleID == 0 {
+		return nil, nil
+	}
+	
+	return json.Marshal(u)
 }

@@ -1,0 +1,141 @@
+.container {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 20px;
+}
+
+.add-page {
+  .add-header {
+    text-align: center;
+    margin-bottom: 30px;
+    
+    .add-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      display: block;
+    }
+    
+    .add-subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+      display: block;
+    }
+  }
+  
+  .form-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    
+    .form-item {
+      margin-bottom: 20px;
+      
+      .form-label {
+        display: block;
+        font-size: 16px;
+        color: #333;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+      
+      .form-input {
+        width: 100%;
+        height: 45px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 0 15px;
+        font-size: 16px;
+        box-sizing: border-box;
+        
+        &:focus {
+          border-color: #007aff;
+        }
+      }
+      
+      .picker-selector {
+        width: 100%;
+        height: 45px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 0 15px;
+        font-size: 16px;
+        line-height: 45px;
+        box-sizing: border-box;
+        background: white;
+        color: #333;
+        
+        &::after {
+          content: "›";
+          position: absolute;
+          right: 15px;
+          top: 50%;
+          transform: translateY(-50%) rotate(90deg);
+          font-size: 20px;
+          color: #999;
+        }
+      }
+      
+      .image-upload {
+        width: 100%;
+        height: 150px;
+        border: 1px dashed #ddd;
+        border-radius: 6px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        background: #fafafa;
+        
+        .upload-placeholder {
+          text-align: center;
+          
+          .upload-text {
+            font-size: 16px;
+            color: #333;
+            display: block;
+          }
+          
+          .upload-tip {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+            display: block;
+          }
+        }
+        
+        .uploaded-image {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+      }
+    }
+    
+    .submit-btn {
+      width: 100%;
+      height: 48px;
+      background: #007aff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: 500;
+      margin-top: 10px;
+      
+      &:disabled {
+        background: #ccc;
+      }
+    }
+  }
+}
+
+.loading {
+  text-align: center;
+  padding: 50px 20px;
+  font-size: 16px;
+  color: #666;
+}

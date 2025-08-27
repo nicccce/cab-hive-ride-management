@@ -1,0 +1,144 @@
+.container {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 20px;
+}
+
+.audit-detail-page {
+  .page-header {
+    margin-bottom: 30px;
+    
+    .page-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
+  }
+  
+  .detail-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+    
+    .card-header {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      
+      .card-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+      }
+    }
+    
+    .card-content {
+      padding: 20px;
+      
+      .info-row {
+        display: flex;
+        margin-bottom: 15px;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+        
+        .info-label {
+          width: 100px;
+          font-size: 14px;
+          color: #666;
+          flex-shrink: 0;
+        }
+        
+        .info-value {
+          flex: 1;
+          font-size: 14px;
+          color: #333;
+          word-break: break-all;
+          
+          &.comment {
+            color: #e74c3c;
+          }
+        }
+      }
+      
+      .image-container {
+        text-align: center;
+        
+        .license-image,
+        .registration-image {
+          max-width: 100%;
+          border-radius: 8px;
+        }
+      }
+    }
+  }
+  
+  .status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    
+    &.status-pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    
+    &.status-approved {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    &.status-rejected {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  }
+}
+
+.loading,
+.error,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 20px;
+  
+  .loading-text,
+  .error-text,
+  .empty-text {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+  
+  .retry-btn {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+}
+
+.no-permission {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  
+  .no-permission-text {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+}

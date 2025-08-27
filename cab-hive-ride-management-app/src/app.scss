@@ -1,0 +1,59 @@
+@use "tailwindcss";
+@import '@taroify/core/index.scss';
+
+page {
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', SimSun, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1f2937;
+}
+
+.container {
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+.section-title {
+  @apply text-lg font-semibold text-neutral-800 mb-4;
+}
+
+.menu-item {
+  @apply bg-white rounded-lg p-4 mb-3 flex items-center justify-between active:bg-neutral-50 transition-colors;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.menu-item-content {
+  @apply flex items-center flex-1;
+}
+
+.menu-item-icon {
+  @apply w-6 h-6 mr-3 text-primary-500;
+}
+
+.menu-item-text {
+  @apply text-neutral-800 font-medium;
+}
+
+.menu-item-arrow {
+  @apply w-5 h-5 text-neutral-400;
+}
+
+.badge {
+  @apply bg-error-500 text-white text-xs px-2 py-1 rounded-full ml-2;
+}
+
+.status-badge {
+  @apply px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.status-pending {
+  @apply bg-warning-100 text-warning-600;
+}
+
+.status-approved {
+  @apply bg-success-100 text-success-600;
+}
+
+.status-rejected {
+  @apply bg-error-100 text-error-600;
+}

@@ -17,9 +17,18 @@ export const driverService = {
     return request.get('/users/drivers', { params });
   },
 
+  // 获取司机信息
+  getDriverInfo: (id?: number): Promise<ApiResponse<Driver>> => {
+    if (id !== undefined) {
+      return request.get(`/users/drivers/info/${id}`);
+    } else {
+      return request.get('/users/drivers/info');
+    }
+  },
+
   // 获取司机详情
   getDriverDetail: (id: number): Promise<ApiResponse<Driver>> => {
-    return request.get(`/users/drivers/${id}`);
+    return request.get(`/users/drivers/info/${id}`);
   },
 
   // 获取司机名下车辆列表

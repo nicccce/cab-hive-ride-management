@@ -16,7 +16,7 @@ type Vehicle struct {
 	InsuranceExpiry   time.Time  `gorm:"type:date;not null"`                 // 保险到期日期
 	Status            string     `gorm:"type:varchar(20);default:'pending'"` // 状态: pending, approved, rejected
 	Comment           string     `gorm:"type:text"`                          // 管理员审核备注
-	SubmitTime        time.Time  `gorm:"type:timestamptz"`                      // 提交时间
-	ReviewTime        *time.Time `gorm:"type:timestamptz"`                      // 审核时间
+	SubmitTime        time.Time  `gorm:"type:timestamptz"`                   // 提交时间
+	ReviewTime        *time.Time `gorm:"type:timestamptz"`                   // 审核时间
 	Reviewer          string     `gorm:"type:varchar(50)"`                   // 审核人
 }

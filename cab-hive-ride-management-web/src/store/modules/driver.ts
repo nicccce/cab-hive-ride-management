@@ -71,6 +71,15 @@ export const getDriverDetailAsync = createAsyncThunk(
   }
 );
 
+// 获取司机信息
+export const getDriverInfoAsync = createAsyncThunk(
+  'driver/getDriverInfo',
+  async (id?: number) => {
+    const response = await driverService.getDriverInfo(id);
+    return response.data;
+  }
+);
+
 // 获取司机名下车辆列表
 export const getDriverVehiclesAsync = createAsyncThunk(
   'driver/getDriverVehicles',
@@ -157,6 +166,10 @@ const driverSlice = createSlice({
       })
       // 获取司机详情
       .addCase(getDriverDetailAsync.fulfilled, (state, action) => {
+        state.currentDriver = action.payload;
+      })
+      // 获取司机信息
+      .addCase(getDriverInfoAsync.fulfilled, (state, action) => {
         state.currentDriver = action.payload;
       })
       // 获取司机名下车辆列表

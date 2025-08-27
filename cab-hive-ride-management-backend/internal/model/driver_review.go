@@ -14,5 +14,5 @@ type DriverReview struct {
 	Comment         string     `gorm:"type:text"`                          // 管理员审核备注
 	ActionType      string     `gorm:"type:varchar(20);not null"`          // 操作类型: register, update
 	DriverID        uint       `gorm:"type:bigint"`                        // 关联的司机ID（用于更新操作）
-	ReviewTime      *time.Time `gorm:"type:timestamptz"`                      // 审核时间
+	ReviewTime      *time.Time `gorm:"type:timestamptz"`                   // 审核时间
 }
