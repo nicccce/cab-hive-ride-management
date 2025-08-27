@@ -18,6 +18,7 @@ export default defineAppConfig({
       desc: '你的位置信息将用于小程序定位' // 这里会显示在授权弹窗上，请务必填写清晰
     }
   },
+  requiredPrivateInfos: ['getLocation', 'chooseLocation'],
   tabBar: {
     custom: false,
     color: '#6b7280',

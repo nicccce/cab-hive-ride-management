@@ -50,3 +50,9 @@ export const RESPONSE_CODES = {
   NOT_FOUND: 404,
   SERVER_ERROR: 500
 }
+
+export const LBS_CONFIG = {
+  key: "CQHBZ-X5HW3-POS3L-OG3O2-KDHJK-KVBMQ",
+  referer: "智峰出行",
+  category: "网约车"
+}

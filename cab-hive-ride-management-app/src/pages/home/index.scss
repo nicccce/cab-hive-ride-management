@@ -1,35 +1,106 @@
 .page-content {
   padding: 0;
-  min-height: 100vh;
+  height: 100vh; /* 使用固定高度而不是最小高度 */
+  display: flex;
+  flex-direction: column;
 }
 
 .map-container {
   width: 100%;
-  height: 60vh;
+  flex: 1; /* 使用flex-grow来占据剩余空间 */
 }
 
-.welcome-section {
-  text-align: center;
-  margin-bottom: 40px;
-  padding: 40px 20px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border-radius: 16px;
-  color: white;
+.ride-info-container {
+  position: absolute;
+  bottom: 20px;
+  left: 15px;
+  right: 15px;
+  z-index: 10;
 }
 
-.welcome-title {
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 8px;
-  display: block;
+.amap-location-selector {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
-.welcome-subtitle {
+// 位置行
+.location-row {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: #fff;
+  position: relative;
+}
+
+// 起点行特殊样式
+.start-row {
+  padding-bottom: 14px;
+}
+
+// 终点行特殊样式
+.end-row {
+  padding-top: 14px;
+}
+
+// 位置标记
+.location-marker {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+// 起点标记 - 浅绿色
+.start-marker {
+  background: #1ecd86;
+}
+
+// 终点标记 - 红色
+.end-marker {
+  background: #ff4d4f;
+}
+
+// 位置文字
+.location-text {
+  flex: 1;
   font-size: 16px;
-  opacity: 0.9;
-  display: block;
+  color: #1ecd86;
+  font-weight: normal;
+  text-align: left;
 }
 
+// 占位符文字样式
+.placeholder-text {
+  color: #000;
+  font-weight: bold;
+  font-size: 17px;
+}
+
+// 清除按钮
+.clear-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ddd;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+// 分割线
+.divider-line {
+  height: 1px;
+  background: #f0f0f0;
+  margin: 0 16px;
+}
 .feature-placeholder {
   text-align: center;
   padding: 60px 20px;
