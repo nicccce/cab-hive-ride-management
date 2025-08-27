@@ -1,4 +1,5 @@
-import { View, Map, Button, Text } from "@tarojs/components";
+import { View, Map, Text } from "@tarojs/components";
+import { Button } from "@taroify/core";
 import Taro, { useDidShow, useDidHide } from "@tarojs/taro";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { navigateToLocationPlugin } from "../../services/location";
@@ -31,6 +32,8 @@ const PassengerHome = () => {
   const [markers, setMarkers] = useState([]);
   // 位置跟踪定时器引用
   const loopRef = useRef(null);
+  //获取当前状态（选择地点还是选择路线）
+  const [step, setStep] = useState("location");
 
   // 获取用户当前位置
   const getCurrentLocation = async () => {
@@ -349,12 +352,47 @@ const PassengerHome = () => {
               )}
             </View>
           </View>
-          {/* <Button.Group variant="contained">
-            <Button onClick={handleNowDepart}>现在出发</Button>
-            <Button size="small" onClick={handleReserveDepart}>
+
+          {step == "location" && (
+            <>
+            <Button.Group
+              variant="contained"
+              size="large"
+              shape="round"
+              block
+              disabled={!(startLocation && endLocation)}
+            >
+              <Button
+                onClick={handleNowDepart}
+                className="flex-[3] min-w-0 rounded-l-[50px] rounded-r-none"
+                color="primary"
+                style={{
+                  "--button-color": "var(--button-primary-color)",
+                }}
+              >
+                现在出发
+              </Button>
+              <Button
+                onClick={handleReserveDepart}
+                className="flex-[1] min-w-0 rounded-r-[50px] rounded-l-none bg-white text-gray-800"
+                style={{
+                  "--button-background-color": "#fff",
+                  "--button-color": "#333",
+                }}
+              >
+                预约出发
+              </Button>
+            </Button.Group>
+            </>
+          )}
+          {/* <View className="button-group">
+            <Button className="now-depart-button" onClick={handleNowDepart}>
+              现在出发
+            </Button>
+            <Button className="reserve-depart-button" size="small" onClick={handleReserveDepart}>
               预约出发
             </Button>
-          </Button.Group> */}
+          </View> */}
         </View>
       </View>
     </View>

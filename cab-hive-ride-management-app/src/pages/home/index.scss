@@ -23,6 +23,7 @@
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  margin-bottom: 20px; /* 添加与按钮组之间的间距 */
 }
 
 // 位置行
@@ -121,4 +122,22 @@
   font-size: 14px;
   color: #6b7280;
   display: block;
+}
+
+// 按钮组容器
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+// 现在出发按钮 - 更长
+.now-depart-button {
+  flex: 2;
+  margin-right: 10px;
+}
+
+// 预约出发按钮 - 较短
+.reserve-depart-button {
+  flex: 1;
 }
