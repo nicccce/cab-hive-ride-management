@@ -2,7 +2,10 @@ import { View, Map, Text } from "@tarojs/components";
 import { Button } from "@taroify/core";
 import Taro, { useDidShow, useDidHide } from "@tarojs/taro";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { navigateToLocationPlugin } from "../../services/location";
+import {
+  navigateToLocationPlugin,
+  planDrivingRoute,
+} from "../../services/location";
 import "./index.scss";
 
 const PassengerHome = () => {
@@ -34,6 +37,9 @@ const PassengerHome = () => {
   const loopRef = useRef(null);
   //获取当前状态（选择地点还是选择路线）
   const [step, setStep] = useState("location");
+
+  const [availableRoutes, setAvailableRoutes] = useState([]);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
 
   // 获取用户当前位置
   const getCurrentLocation = async () => {
@@ -280,7 +286,163 @@ const PassengerHome = () => {
     setEndLocation(null);
   };
 
-  const handleNowDepart = () => {};
+const handleNowDepart = async () => {
+  try {
+    // 1. 检查必要的参数
+    if (!startLocation || !endLocation) {
+      Taro.showToast({
+        title: "请先选择起点和终点",
+        icon: "none",
+      });
+      return;
+    }
+
+    console.log("开始路线规划，起点:", startLocation, "终点:", endLocation);
+
+    // 2. 使用新的驾车路线规划服务
+    const routes = await planDrivingRoute({
+      from: startLocation,
+      to: endLocation,
+      policy: "LEAST_TIME", // 使用时间最短策略（RECOMMEND可能不是有效参数）
+    });
+
+    console.log("规划的所有路线：", routes);
+
+    // 3. 只取前3条路线（如果有多条）
+    const top3Routes = routes.slice(0, 3);
+    console.log("前3条路线：", top3Routes);
+
+    if (top3Routes.length === 0) {
+      Taro.showToast({
+        title: "未找到可用路线",
+        icon: "none",
+      });
+      return;
+    }
+
+    // 4. 在地图上显示所有路线（不同颜色）
+    const polylines = top3Routes.map((route, index) => ({
+      points: route.points,
+      color: getRouteColor(index),
+      width: index === 0 ? 8 : 6, // 推荐路线更粗
+      dottedLine: index > 0,
+      arrowLine: true, // 显示方向箭头
+    }));
+
+    // 5. 计算中心点并更新地图显示
+    const center = calculateRoutesCenter(top3Routes);
+    setMapConfig((prev) => ({
+      ...prev,
+      polyline: polylines,
+      longitude: center.longitude,
+      latitude: center.latitude,
+      scale: 14, // 调整缩放级别以更好地显示路线
+    }));
+
+    // 6. 保存路线数据供用户选择
+    setAvailableRoutes(top3Routes);
+    setSelectedRouteIndex(0);
+
+    // 7. 显示路线详情信息
+    showRouteDetails(top3Routes[0]);
+
+    Taro.showToast({
+      title: `找到${top3Routes.length}条路线`,
+      icon: "success",
+    });
+
+  } catch (error) {
+    console.error("路线规划失败：", error);
+    Taro.showToast({
+      title: `路线规划失败: ${error.message || '请重试'}`,
+      icon: "none",
+      duration: 3000
+    });
+  }
+};
+
+// 显示路线详情信息
+const showRouteDetails = (route) => {
+  const distance = formatDistance(route.distance);
+  const duration = formatDuration(route.duration);
+  const tollsInfo = route.tolls > 0 ? `，收费${route.tolls}元` : '';
+
+  Taro.showModal({
+    title: '路线详情',
+    content: `距离: ${distance}\n时间: ${duration}${tollsInfo}`,
+    showCancel: false
+  });
+};
+
+// 路线颜色配置
+const getRouteColor = (index) => {
+  const colors = [
+    "#FF0000", // 红色 - 推荐路线
+    "#007AFF", // 蓝色 - 备选路线1
+    "#34C759", // 绿色 - 备选路线2
+    "#FF9500", // 橙色 - 备选路线3
+  ];
+  return colors[index] || "#5856D6";
+};
+
+// 计算多条路线的中心点（优化版本）
+const calculateRoutesCenter = (routes) => {
+  if (!routes || routes.length === 0) {
+    return { longitude: 116.397524, latitude: 39.908764 };
+  }
+
+  try {
+    // 获取所有路线的所有点
+    const allPoints = routes.flatMap(route => 
+      route.points && route.points.length > 0 ? route.points : []
+    );
+
+    if (allPoints.length === 0) {
+      return { 
+        longitude: routes[0].startLocation?.longitude || 116.397524, 
+        latitude: routes[0].startLocation?.latitude || 39.908764 
+      };
+    }
+
+    // 计算边界
+    const latitudes = allPoints.map(p => p.latitude).filter(lat => !Number.isNaN(lat));
+    const longitudes = allPoints.map(p => p.longitude).filter(lng => !Number.isNaN(lng));
+
+    if (latitudes.length === 0 || longitudes.length === 0) {
+      return { longitude: 116.397524, latitude: 39.908764 };
+    }
+
+    const minLat = Math.min(...latitudes);
+    const maxLat = Math.max(...latitudes);
+    const minLng = Math.min(...longitudes);
+    const maxLng = Math.max(...longitudes);
+
+    return {
+      longitude: (minLng + maxLng) / 2,
+      latitude: (minLat + maxLat) / 2,
+    };
+  } catch (error) {
+    console.error("计算中心点失败:", error);
+    return { longitude: 116.397524, latitude: 39.908764 };
+  }
+};
+
+// 格式化距离
+const formatDistance = (meters) => {
+  if (!meters || Number.isNaN(meters)) return '未知距离';
+  if (meters < 1000) return `${Math.round(meters)}米`;
+  return `${(meters / 1000).toFixed(1)}公里`;
+};
+
+// 格式化时间
+const formatDuration = (seconds) => {
+  if (!seconds || Number.isNaN(seconds)) return '未知时间';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 0) return `${hours}小时${minutes}分钟`;
+  return `${minutes}分钟`;
+};
 
   const handleReserveDepart = () => {};
 
@@ -355,34 +517,34 @@ const PassengerHome = () => {
 
           {step == "location" && (
             <>
-            <Button.Group
-              variant="contained"
-              size="large"
-              shape="round"
-              block
-              disabled={!(startLocation && endLocation)}
-            >
-              <Button
-                onClick={handleNowDepart}
-                className="flex-[3] min-w-0 rounded-l-[50px] rounded-r-none"
-                color="primary"
-                style={{
-                  "--button-color": "var(--button-primary-color)",
-                }}
+              <Button.Group
+                variant="contained"
+                size="large"
+                shape="round"
+                block
+                disabled={!(startLocation && endLocation)}
               >
-                现在出发
-              </Button>
-              <Button
-                onClick={handleReserveDepart}
-                className="flex-[1] min-w-0 rounded-r-[50px] rounded-l-none bg-white text-gray-800"
-                style={{
-                  "--button-background-color": "#fff",
-                  "--button-color": "#333",
-                }}
-              >
-                预约出发
-              </Button>
-            </Button.Group>
+                <Button
+                  onClick={handleNowDepart}
+                  className="flex-[3] min-w-0 rounded-l-[50px] rounded-r-none"
+                  color="primary"
+                  style={{
+                    "--button-color": "var(--button-primary-color)",
+                  }}
+                >
+                  现在出发
+                </Button>
+                <Button
+                  onClick={handleReserveDepart}
+                  className="flex-[1] min-w-0 rounded-r-[50px] rounded-l-none bg-white text-gray-800"
+                  style={{
+                    "--button-background-color": "#fff",
+                    "--button-color": "#333",
+                  }}
+                >
+                  预约出发
+                </Button>
+              </Button.Group>
             </>
           )}
           {/* <View className="button-group">

@@ -53,6 +53,5 @@ export const RESPONSE_CODES = {
 
 export const LBS_CONFIG = {
   key: "CQHBZ-X5HW3-POS3L-OG3O2-KDHJK-KVBMQ",
-  referer: "智峰出行",
-  category: "网约车"
+  referer: "智峰出行"
 }
