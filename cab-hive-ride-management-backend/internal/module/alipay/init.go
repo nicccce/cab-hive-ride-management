@@ -29,7 +29,7 @@ func initAlipayClient() {
 	cfg := config.Get().AliPay
 	
 	// 检查必要配置是否存在
-	if cfg.AppID == "" || cfg.PrivateKey == "" || cfg.PublicKey == "" {
+	if cfg.AppID == "" {
 		log.Warn("支付宝配置不完整，跳过初始化")
 		return
 	}
@@ -52,9 +52,13 @@ func initAlipayClient() {
 		return
 	}
 	
+	err = client.LoadAppCertPublicKeyFromFile("/路径/appCertPublicKey_2017011104995404.crt") // 加载应用公钥证书
+	err = client.LoadAliPayRootCertFromFile("/路径/alipayRootCert.crt")                // 加载支付宝根证书
+	err = client.LoadAlipayCertPublicKeyFromFile("/路径/alipayCertPublicKey_RSA2.crt") // 加载支付宝公钥证书
+
 	// 加载支付宝公钥
-	if err = client.LoadAliPayPublicKey(cfg.PublicKey); err != nil {
-		log.Error("加载支付宝公钥失败", "error", err)
+	if err != nil {
+		log.Error("加载支付宝证书", "error", err)
 		return
 	}
 	

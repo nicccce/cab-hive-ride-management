@@ -68,7 +68,7 @@ type OrderResponse struct {
 	VehicleID     uint                  `json:"vehicle_id"`
 	StartLocation model.Location        `json:"start_location"`
 	EndLocation   model.Location        `json:"end_location"`
-	RoutePoints   []model.LocationPoint `json:"route_points"`
+	RoutePoints   model.LocationPoints `json:"route_points"`
 	StartTime     *string               `json:"start_time"`
 	EndTime       *string               `json:"end_time"`
 	Distance      float64               `json:"distance"`
@@ -153,7 +153,7 @@ func CreateImmediateOrder(c *gin.Context) {
 		UserOpenID:    payload.OpenID,
 		StartLocation: req.StartLocation,
 		EndLocation:   req.EndLocation,
-		RoutePoints:   req.Points,
+		RoutePoints:   model.LocationPoints(req.Points),
 		StartTime:     &now,
 		Distance:      float64(req.Distance) / 1000, // 转换为公里
 		Duration:      req.Duration,

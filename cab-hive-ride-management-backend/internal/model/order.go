@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -11,6 +12,9 @@ type LocationPoint struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
 }
+
+// LocationPoints 定义位置点切片类型
+type LocationPoints []LocationPoint
 
 // Location 定义位置信息的结构
 type Location struct {
@@ -37,7 +41,7 @@ type Order struct {
 	VehicleID     uint            `gorm:"type:bigint;index"`                             // 车辆ID
 	StartLocation Location        `gorm:"type:jsonb"`                                    // 起点位置
 	EndLocation   Location        `gorm:"type:jsonb"`                                    // 终点位置
-	RoutePoints   []LocationPoint `gorm:"type:jsonb"`                                    // 路线点
+	RoutePoints   LocationPoints `gorm:"type:jsonb"`                                    // 路线点
 	StartTime     *time.Time      `gorm:"type:timestamptz"`                              // 出发时间
 	EndTime       *time.Time      `gorm:"type:timestamptz"`                              // 实际结束时间
 	Distance      float64         `gorm:"type:decimal(10,2)"`                            // 距离（公里）
@@ -73,6 +77,30 @@ func (lp *LocationPoint) Scan(value interface{}) error {
 		return nil
 	}
 	return json.Unmarshal(value.([]byte), lp)
+}
+
+// 实现 LocationPoints 的 driver.Valuer 和 sql.Scanner 接口
+func (lps LocationPoints) Value() (driver.Value, error) {
+	return json.Marshal(lps)
+}
+
+func (lps *LocationPoints) Scan(value interface{}) error {
+	if value == nil {
+		*lps = nil
+		return nil
+	}
+
+	// 确保目标是指向切片的指针
+	if *lps == nil {
+		*lps = make(LocationPoints, 0)
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("无法将值转换为字节切片")
+	}
+
+	return json.Unmarshal(bytes, lps)
 }
 
 func (rs RouteStep) Value() (driver.Value, error) {

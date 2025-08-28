@@ -102,3 +102,41 @@ oss:
    
    # OSS Bucket 名称
    bucket_name: "your_oss_bucket_name"
+
+# 支付宝配置
+alipay:
+   # 支付宝应用ID
+   app_id: "2021000123456789"
+   
+   # 商户私钥（注意使用竖线保持格式）
+   private_key: |
+     -----BEGIN RSA PRIVATE KEY-----
+     MIIEowIBAAKCAQEA2V6rLJ1bX8pP9H5sF6qN8rT0yU1vW2xY3zA4bB5cC6dD7eE
+     8fF9gG0hH1iI2jJ3kK4lL5mM6nN7oO8pP9qQ0rR1sS2tT3uU4vV5wW6xX7yY8zZ
+     ...
+     -----END RSA PRIVATE KEY-----
+   
+   # 支付宝公钥（注意使用竖线保持格式）
+   public_key: |
+     -----BEGIN PUBLIC KEY-----
+     MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2V6rLJ1bX8pP9H5sF6qN
+     8rT0yU1vW2xY3zA4bB5cC6dD7eE8fF9gG0hH1iI2jJ3kK4lL5mM6nN7oO8pP9qQ0
+     ...
+     -----END PUBLIC KEY-----
+   
+   # 异步通知URL（支付宝服务器向您的服务器发送支付结果通知的地址）
+   notify_url: "https://yourdomain.com/api/payment/notify"
+   
+   # 同步返回URL（用户支付完成后跳转回您的应用的地址）
+   return_url: "https://yourdomain.com/api/payment/return"
+   
+   # 支付宝网关地址
+   # 生产环境: "https://openapi.alipay.com/gateway.do"
+   # 沙箱环境: "https://openapi.alipaydev.com/gateway.do"
+   server_url: "https://openapi.alipay.com/gateway.do"
+   
+   # 收款支付宝用户ID（可选）
+   seller_id: "2088123456789012"
+   
+   # 是否生产环境(true/false)
+   is_production: true
