@@ -539,11 +539,10 @@ const PassengerHome = () => {
                         <View className="route-details">
                           <Text className="route-time">{formatDuration(route.duration)}</Text>
                           <Text className="route-distance">{formatDistance(route.distance)}</Text>
+                        </View>
+                        <View className="route-details">
                           {route.tolls > 0 && (
-                            <Text className="route-tolls">{route.tolls}元</Text>
-                          )}
-                          {route.tolls > 0 && (
-                            <Text className="route-tolls">{route.tolls}元</Text>
+                            <Text className="route-tolls">预计{route.tolls}元</Text>
                           )}
                         </View>
                       </View>

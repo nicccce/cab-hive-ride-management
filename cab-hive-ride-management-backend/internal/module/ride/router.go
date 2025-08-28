@@ -15,4 +15,8 @@ func (m *ModuleRide) InitRouter(router *gin.RouterGroup) {
 	// 获取订单详情
 	// 需要用户认证
 	router.GET("/rides/:id", middleware.Auth(1), GetOrder)
+	
+	// 获取用户未完成订单
+	// 需要用户认证
+	router.GET("/rides/unfinished", middleware.Auth(1), GetUnfinishedOrder)
 }

@@ -58,6 +58,10 @@ CREATE TABLE IF NOT EXISTS ride_orders (
    driver_rating INTEGER DEFAULT 0,
    user_rating INTEGER DEFAULT 0,
    is_recommended BOOLEAN DEFAULT FALSE
+-- 插入测试订单数据
+INSERT INTO ride_orders (user_open_id, driver_open_id, vehicle_id, start_location, end_location, route_points, start_time, distance, duration, fare, tolls, status, comment, payment_status, payment_time, cancel_reason, driver_rating, user_rating, is_recommended, created_at, updated_at) VALUES
+('openid_user1', '', 0, '{"latitude": 36.68013, "longitude": 117.06533, "name": "当前位置"}', '{"name": "山东大学(中心校区)", "latitude": 36.675681, "longitude": 117.059985, "address": "山东省济南市历城区山大南路27号", "province": "山东省", "city": "济南市", "district": "历城区"}', '[{"latitude": 36.680143, "longitude": 117.06532}]', NOW(), 1.24, 5, 8.00, 8.00, 'waiting_for_driver', '', 'pending', NULL, '', 0, 0, true, NOW(), NOW()),
+('openid_user2', 'openid_driver1', 1, '{"latitude": 36.68013, "longitude": 117.06533, "name": "当前位置"}', '{"name": "济南火车站", "latitude": 36.675681, "longitude": 117.059985, "address": "山东省济南市天桥区车站街1号", "province": "山东省", "city": "济南市", "district": "天桥区"}', '[{"latitude": 36.680143, "longitude": 117.06532}]', NOW(), 2.50, 10, 15.00, 0.00, 'in_progress', '', 'pending', NULL, '', 0, 0, false, NOW(), NOW());
 );
 
 -- 创建订单状态索引

@@ -17,10 +17,6 @@ type Location struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
 	Name      string  `json:"name"`
-	Address   string  `json:"address,omitempty"`
-	Province  string  `json:"province,omitempty"`
-	City      string  `json:"city,omitempty"`
-	District  string  `json:"district,omitempty"`
 }
 
 // RouteStep 定义路线步骤的结构
@@ -33,42 +29,26 @@ type RouteStep struct {
 	AccessorialDesc string `json:"accessorial_desc"`
 }
 
-// RouteData 定义路线数据的结构
-type RouteData struct {
-	Distance          int         `json:"distance"`
-	Duration          int         `json:"duration"`
-	TrafficLightCount int         `json:"traffic_light_count"`
-	Toll              int         `json:"toll"`
-	RestrictionStatus int         `json:"restriction_status"`
-	Polyline          []float64   `json:"polyline"`
-	Steps             []RouteStep `json:"steps"`
-	Tags              []string    `json:"tags"`
-}
-
 // RideOrder 定义订单信息的结构体
 type RideOrder struct {
 	Model
-	UserOpenID        string        `gorm:"type:varchar(50);index;not null"`               // 用户OpenID
-	DriverOpenID      string        `gorm:"type:varchar(50);index"`                        // 司机OpenID
-	VehicleID         uint          `gorm:"type:bigint;index"`                             // 车辆ID
-	StartLocation     Location      `gorm:"type:jsonb"`                                    // 起点位置
-	EndLocation       Location      `gorm:"type:jsonb"`                                    // 终点位置
-	RoutePoints       []LocationPoint `gorm:"type:jsonb"`                                  // 路线点
-	RouteData         RouteData     `gorm:"type:jsonb"`                                    // 路线数据
-	StartTime         *time.Time    `gorm:"type:timestamptz"`                              // 预计出发时间
-	EndTime           *time.Time    `gorm:"type:timestamptz"`                              // 实际结束时间
-	Distance          float64       `gorm:"type:decimal(10,2)"`                            // 距离（公里）
-	Duration          int           `gorm:"type:int"`                                      // 预计时长（分钟）
-	Fare              float64       `gorm:"type:decimal(10,2)"`                            // 费用
-	Tolls             float64       `gorm:"type:decimal(10,2)"`                            // 过路费
-	Status            string        `gorm:"type:varchar(20);default:'waiting_for_driver'"` // 订单状态
-	Comment           string        `gorm:"type:text"`                                     // 备注
-	PaymentStatus     string        `gorm:"type:varchar(20);default:'pending'"`            // 支付状态
-	PaymentTime       *time.Time    `gorm:"type:timestamptz"`                              // 支付时间
-	CancelReason      string        `gorm:"type:text"`                                     // 取消原因
-	DriverRating      int           `gorm:"type:int;default:0"`                            // 司机评分
-	UserRating        int           `gorm:"type:int;default:0"`                            // 用户评分
-	IsRecommended     bool          `gorm:"type:boolean;default:false"`                    // 是否推荐路线
+	UserOpenID    string          `gorm:"type:varchar(50);index;not null"`               // 用户OpenID
+	DriverOpenID  string          `gorm:"type:varchar(50);index"`                        // 司机OpenID
+	VehicleID     uint            `gorm:"type:bigint;index"`                             // 车辆ID
+	StartLocation Location        `gorm:"type:jsonb"`                                    // 起点位置
+	EndLocation   Location        `gorm:"type:jsonb"`                                    // 终点位置
+	RoutePoints   []LocationPoint `gorm:"type:jsonb"`                                    // 路线点
+	StartTime     *time.Time      `gorm:"type:timestamptz"`                              // 出发时间
+	EndTime       *time.Time      `gorm:"type:timestamptz"`                              // 实际结束时间
+	Distance      float64         `gorm:"type:decimal(10,2)"`                            // 距离（公里）
+	Duration      int             `gorm:"type:int"`                                      // 预计时长（分钟）
+	Fare          float64         `gorm:"type:decimal(10,2)"`                            // 费用
+	Tolls         float64         `gorm:"type:decimal(10,2)"`                            // 过路费
+	Status        string          `gorm:"type:varchar(20);default:'waiting_for_driver'"` // 订单状态
+	Comment       string          `gorm:"type:text"`                                     // 备注
+	PaymentTime   *time.Time      `gorm:"type:timestamptz"`                              // 支付时间
+	CancelReason  string          `gorm:"type:text"`                                     // 取消原因
+	Rating        int             `gorm:"type:int;default:0"`                            // 司机评分
 }
 
 // 实现 driver.Valuer 和 sql.Scanner 接口以便在数据库中存储 JSON
@@ -94,28 +74,6 @@ func (lp *LocationPoint) Scan(value interface{}) error {
 	return json.Unmarshal(value.([]byte), lp)
 }
 
-func (rp []LocationPoint) Value() (driver.Value, error) {
-	return json.Marshal(rp)
-}
-
-func (rp *LocationPoint) Scan(value interface{}) error {
-	if value == nil {
-		return nil
-	}
-	return json.Unmarshal(value.([]byte), rp)
-}
-
-func (rd RouteData) Value() (driver.Value, error) {
-	return json.Marshal(rd)
-}
-
-func (rd *RouteData) Scan(value interface{}) error {
-	if value == nil {
-		return nil
-	}
-	return json.Unmarshal(value.([]byte), rd)
-}
-
 func (rs RouteStep) Value() (driver.Value, error) {
 	return json.Marshal(rs)
 }
@@ -129,18 +87,11 @@ func (rs *RouteStep) Scan(value interface{}) error {
 
 // OrderStatus 订单状态枚举
 const (
-	OrderStatusWaitingForDriver   = "waiting_for_driver"     // 等待司机接单
-	OrderStatusWaitingForPickup   = "waiting_for_pickup"     // 等待司机到达起点
-	OrderStatusDriverArrived      = "driver_arrived"         // 等待司机接客
-	OrderStatusInProgress         = "in_progress"            // 在路上
-	OrderStatusWaitingForPayment  = "waiting_for_payment"    // 结束待付款
-	OrderStatusCompleted          = "completed"              // 已完结
-	OrderStatusCancelled          = "cancelled"              // 已取消
-)
-
-// PaymentStatus 支付状态枚举
-const (
-	PaymentStatusPending   = "pending"    // 待支付
-	PaymentStatusPaid      = "paid"       // 已支付
-	PaymentStatusCancelled = "cancelled"  // 已取消
+	OrderStatusWaitingForDriver  = "waiting_for_driver"  // 等待司机接单
+	OrderStatusWaitingForPickup  = "waiting_for_pickup"  // 等待司机到达起点
+	OrderStatusDriverArrived     = "driver_arrived"      // 等待司机接客
+	OrderStatusInProgress        = "in_progress"         // 在路上
+	OrderStatusWaitingForPayment = "waiting_for_payment" // 结束待付款
+	OrderStatusCompleted         = "completed"           // 已完结
+	OrderStatusCancelled         = "cancelled"           // 已取消
 )

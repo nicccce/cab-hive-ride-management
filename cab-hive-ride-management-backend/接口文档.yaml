@@ -961,4 +961,85 @@ components:
      required:
        - user_open_id
        - start_location
+/rides/unfinished:
+    get:
+      summary: Get Unfinished Ride Order
+      description: Get the unfinished ride order for the current user.
+      operationId: getUnfinishedOrder
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+              example:
+                code: 200
+                msg: Success
+                data:
+                  id: 1
+                  create_time: 1678886400000
+                  update_time: 1678886400000
+                  user_open_id: openid_user1
+                  driver_open_id: ""
+                  vehicle_id: 0
+                  start_location:
+                    latitude: 36.68013
+                    longitude: 117.06533
+                    name: 当前位置
+                  end_location:
+                    name: 山东大学(中心校区)
+                    latitude: 36.675681
+                    longitude: 117.059985
+                    address: 山东省济南市历城区山大南路27号
+                    province: 山东省
+                    city: 济南市
+                    district: 历城区
+                  route_points:
+                    - latitude: 36.680143
+                      longitude: 117.06532
+                  route_data:
+                    distance: 1240
+                    duration: 5
+                    traffic_light_count: 1
+                    toll: 0
+                    restriction_status: 1
+                    polyline:
+                      - 36.680143
+                      - 117.06532
+                      - -31
+                      - -62
+                      - 0
+                      - 0
+                    steps:
+                      - instruction: 沿内部道路行驶6米,左转
+                        road_name: 内部道路
+                        dir_desc: ""
+                        distance: 6
+                        act_desc: 左转
+                        accessorial_desc: ""
+                    tags: []
+                  start_time: null
+                  end_time: null
+                  distance: 1.24
+                  duration: 5
+                  fare: 8
+                  tolls: 8
+                  status: waiting_for_driver
+                  comment: ""
+                  payment_status: pending
+                  payment_time: null
+                  cancel_reason: ""
+                  driver_rating: 0
+                  user_rating: 0
+                  is_recommended: true
+                timestamp: 2025-07-16T10:30:00Z
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
        - end_location

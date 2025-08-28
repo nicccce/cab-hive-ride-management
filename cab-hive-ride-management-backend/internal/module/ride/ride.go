@@ -9,28 +9,26 @@ import (
 	"cab-hive/internal/global/response"
 	"cab-hive/internal/model"
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
+	go_redis "github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 // CreateImmediateOrderRequest 定义创建立即出发订单的请求结构
 type CreateImmediateOrderRequest struct {
-	ID            uint            `json:"id"`
 	Points        []model.LocationPoint `json:"points"`
-	Distance      int             `json:"distance"`
-	Duration      int             `json:"duration"`
-	Tolls         float64         `json:"tolls"`
-	Tags          []string        `json:"tags"`
-	IsRecommended bool            `json:"isRecommended"`
-	Restriction   Restriction     `json:"restriction"`
+	Distance      int                   `json:"distance"`
+	Duration      int                   `json:"duration"`
+	Tolls         float64               `json:"tolls"`
+	Tags          []string              `json:"tags"`
 	Steps         []model.RouteStep     `json:"steps"`
-	RawData       RawData         `json:"rawData"`
-	StartLocation model.Location  `json:"startLocation"`
-	EndLocation   model.Location  `json:"endLocation"`
+	StartLocation model.Location        `json:"startLocation"`
+	EndLocation   model.Location        `json:"endLocation"`
 }
 
 // Restriction 定义限制信息结构
@@ -40,16 +38,16 @@ type Restriction struct {
 
 // RawData 定义原始数据结构
 type RawData struct {
-	Mode              string          `json:"mode"`
-	Distance          int             `json:"distance"`
-	Duration          int             `json:"duration"`
-	TrafficLightCount int             `json:"traffic_light_count"`
-	Toll              int             `json:"toll"`
-	Restriction       Restriction     `json:"restriction"`
-	Polyline          []float64       `json:"polyline"`
-	Steps             []model.RouteStep     `json:"steps"`
-	Tags              []string        `json:"tags"`
-	TaxiFare          TaxiFare        `json:"taxi_fare"`
+	Mode              string            `json:"mode"`
+	Distance          int               `json:"distance"`
+	Duration          int               `json:"duration"`
+	TrafficLightCount int               `json:"traffic_light_count"`
+	Toll              int               `json:"toll"`
+	Restriction       Restriction       `json:"restriction"`
+	Polyline          []float64         `json:"polyline"`
+	Steps             []model.RouteStep `json:"steps"`
+	Tags              []string          `json:"tags"`
+	TaxiFare          TaxiFare          `json:"taxi_fare"`
 }
 
 // TaxiFare 定义出租车费用结构
@@ -64,30 +62,24 @@ type CreateImmediateOrderResponse struct {
 
 // OrderResponse 定义订单信息响应的结构体
 type OrderResponse struct {
-	ID             uint              `json:"id"`
-	CreateTime     int64             `json:"create_time"`
-	UpdateTime     int64             `json:"update_time"`
-	UserOpenID     string            `json:"user_open_id"`
-	DriverOpenID   string            `json:"driver_open_id"`
-	VehicleID      uint              `json:"vehicle_id"`
-	StartLocation  model.Location    `json:"start_location"`
-	EndLocation    model.Location    `json:"end_location"`
-	RoutePoints    []model.LocationPoint   `json:"route_points"`
-	RouteData      model.RouteData   `json:"route_data"`
-	StartTime      *string           `json:"start_time"`
-	EndTime        *string           `json:"end_time"`
-	Distance       float64           `json:"distance"`
-	Duration       int               `json:"duration"`
-	Fare           float64           `json:"fare"`
-	Tolls          float64           `json:"tolls"`
-	Status         string            `json:"status"`
-	Comment        string            `json:"comment"`
-	PaymentStatus  string            `json:"payment_status"`
-	PaymentTime    *string           `json:"payment_time"`
-	CancelReason   string            `json:"cancel_reason"`
-	DriverRating   int               `json:"driver_rating"`
-	UserRating     int               `json:"user_rating"`
-	IsRecommended  bool              `json:"is_recommended"`
+	ID            uint                  `json:"id"`
+	UserOpenID    string                `json:"user_open_id"`
+	DriverOpenID  string                `json:"driver_open_id"`
+	VehicleID     uint                  `json:"vehicle_id"`
+	StartLocation model.Location        `json:"start_location"`
+	EndLocation   model.Location        `json:"end_location"`
+	RoutePoints   []model.LocationPoint `json:"route_points"`
+	StartTime     *string               `json:"start_time"`
+	EndTime       *string               `json:"end_time"`
+	Distance      float64               `json:"distance"`
+	Duration      int                   `json:"duration"`
+	Fare          float64               `json:"fare"`
+	Tolls         float64               `json:"tolls"`
+	Status        string                `json:"status"`
+	PaymentTime   *string               `json:"payment_time"`
+	Comment       string                `json:"comment"`
+	CancelReason  string                `json:"cancel_reason"`
+	Rating        int                   `json:"rating"`
 }
 
 // CreateImmediateOrder 处理前端传来的立即出发订单内容
@@ -122,32 +114,36 @@ func CreateImmediateOrder(c *gin.Context) {
 		return
 	}
 
-	// 转换路线数据
-	routeData := model.RouteData{
-		Distance:          req.RawData.Distance,
-		Duration:          req.RawData.Duration,
-		TrafficLightCount: req.RawData.TrafficLightCount,
-		Toll:              req.RawData.Toll,
-		RestrictionStatus: req.RawData.Restriction.Status,
-		Polyline:          req.RawData.Polyline,
-		Steps:             req.RawData.Steps,
-		Tags:              req.RawData.Tags,
+	// 检查用户是否有未完成的订单
+	var unfinishedOrder model.RideOrder
+	err := database.DB.Where("user_open_id = ? AND status NOT IN (?, ?)",
+		payload.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
+		First(&unfinishedOrder).Error
+
+	// 如果找到了未完成的订单，拒绝创建新订单
+	if err == nil {
+		log.Error("用户有未完成的订单，拒绝创建新订单", "user_open_id", payload.OpenID, "order_id", unfinishedOrder.ID)
+		response.Fail(c, response.ErrInvalidRequest.WithTips("用户有未完成的订单，无法创建新订单"))
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		// 如果是其他数据库错误，返回错误响应
+		log.Error("数据库查询失败", "error", err)
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
 	}
 
 	// 创建订单对象
+	now := time.Now()
 	order := model.RideOrder{
-		UserOpenID:        payload.OpenID,
-		StartLocation:     req.StartLocation,
-		EndLocation:       req.EndLocation,
-		RoutePoints:       req.Points,
-		RouteData:         routeData,
-		Distance:          float64(req.Distance) / 1000, // 转换为公里
-		Duration:          req.Duration,
-		Fare:              req.RawData.TaxiFare.Fare,
-		Tolls:             req.Tolls,
-		Status:            model.OrderStatusWaitingForDriver, // 初始状态为等待司机接单
-		PaymentStatus:     model.PaymentStatusPending,        // 初始支付状态为待支付
-		IsRecommended:     req.IsRecommended,
+		UserOpenID:    payload.OpenID,
+		StartLocation: req.StartLocation,
+		EndLocation:   req.EndLocation,
+		RoutePoints:   req.Points,
+		StartTime:     &now,
+		Distance:      float64(req.Distance) / 1000, // 转换为公里
+		Duration:      req.Duration,
+		Fare:          req.Tolls,
+		Status:        model.OrderStatusWaitingForDriver, // 初始状态为等待司机接单
 	}
 
 	// 保存订单到数据库
@@ -157,9 +153,9 @@ func CreateImmediateOrder(c *gin.Context) {
 		return
 	}
 
-	// 将订单ID添加到Redis中对应状态的集合
+	// 将订单ID和内容添加到Redis中
 	// 注意：结束待付款和已完结状态不需要在Redis中维护
-	if err := AddOrderToRedisStatusSet(order.ID, order.Status); err != nil {
+	if err := AddOrderToRedisStatusSet(&order); err != nil {
 		log.Error("添加订单到Redis失败", "error", err, "order_id", order.ID)
 		// 注意：这里不返回错误，因为订单已经成功保存到数据库
 		// Redis操作失败不应该影响主要业务流程
@@ -175,35 +171,71 @@ func CreateImmediateOrder(c *gin.Context) {
 	response.Success(c, resp)
 }
 
-// RemoveOrderFromRedis 从Redis中移除订单
+// RemoveOrderFromRedis 从Redis中移除订单，包括状态集合、订单内容和地理位置索引
 // 当订单状态改变时调用此函数
 func RemoveOrderFromRedis(orderID uint, status string) error {
 	redisClient := redis.RedisClient
 	ctx := context.Background()
 
-	// 从对应状态的集合中移除订单ID
-	key := "ride_orders:" + status
-	if err := redisClient.SRem(ctx, key, orderID).Err(); err != nil {
+	// 开始事务
+	pipe := redisClient.TxPipeline()
+
+	// 1. 从对应状态的集合中移除订单ID
+	statusKey := "ride_orders:" + status
+	pipe.SRem(ctx, statusKey, orderID)
+
+	// 2. 删除订单内容
+	orderKey := fmt.Sprintf("ride_order:%d", orderID)
+	pipe.Del(ctx, orderKey)
+
+	// 3. 从地理位置索引中移除订单ID
+	geoKey := "ride_orders_by_start_location"
+	pipe.ZRem(ctx, geoKey, fmt.Sprintf("%d", orderID))
+
+	// 执行事务
+	if _, err := pipe.Exec(ctx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// AddOrderToRedisStatusSet 将订单添加到Redis中指定状态的集合
+// AddOrderToRedisStatusSet 将订单添加到Redis中指定状态的集合，并存储订单内容和地理位置索引
 // 当订单状态改变时调用此函数
-func AddOrderToRedisStatusSet(orderID uint, status string) error {
+func AddOrderToRedisStatusSet(order *model.RideOrder) error {
 	redisClient := redis.RedisClient
 	ctx := context.Background()
 
 	// 结束待付款和已完结状态不需要在Redis中维护
-	if status == model.OrderStatusWaitingForPayment || status == model.OrderStatusCompleted {
+	if order.Status == model.OrderStatusWaitingForPayment || order.Status == model.OrderStatusCompleted {
 		return nil
 	}
 
-	// 添加订单ID到对应状态的集合
-	key := "ride_orders:" + status
-	if err := redisClient.SAdd(ctx, key, orderID).Err(); err != nil {
+	// 开始事务
+	pipe := redisClient.TxPipeline()
+
+	// 1. 添加订单ID到对应状态的集合
+	statusKey := "ride_orders:" + order.Status
+	pipe.SAdd(ctx, statusKey, order.ID)
+
+	// 2. 存储订单内容到Hash
+	orderKey := fmt.Sprintf("ride_order:%d", order.ID)
+	orderBytes, err := json.Marshal(order)
+	if err != nil {
+		return err
+	}
+	pipe.Set(ctx, orderKey, string(orderBytes), 24*time.Hour) // 一天过期，过期后自动删除
+
+	// 3. 添加订单ID和起始位置到地理位置索引
+	geoKey := "ride_orders_by_start_location"
+	pipe.GeoAdd(ctx, geoKey, &go_redis.GeoLocation{
+		Name:      fmt.Sprintf("%d", order.ID),
+		Longitude: order.StartLocation.Longitude,
+		Latitude:  order.StartLocation.Latitude,
+	})
+
+	// 执行事务
+	if _, err := pipe.Exec(ctx); err != nil {
 		return err
 	}
 
@@ -263,55 +295,186 @@ func GetOrder(c *gin.Context) {
 	// 转换为响应格式
 	orderResp := OrderResponse{
 		ID:            order.ID,
-		CreateTime:    order.CreateTime(),
-		UpdateTime:    order.UpdateTime(),
 		UserOpenID:    order.UserOpenID,
 		DriverOpenID:  order.DriverOpenID,
 		VehicleID:     order.VehicleID,
 		StartLocation: order.StartLocation,
 		EndLocation:   order.EndLocation,
 		RoutePoints:   order.RoutePoints,
-		RouteData:     order.RouteData,
 		StartTime: func() *string {
 			if order.StartTime != nil {
-				formatted := order.StartTime.Format(time.RFC3339)
+				formatted := order.StartTime.Format("2006/01/02 15:04:05")
 				return &formatted
 			}
 			return nil
 		}(),
 		EndTime: func() *string {
 			if order.EndTime != nil {
-				formatted := order.EndTime.Format(time.RFC3339)
+				formatted := order.EndTime.Format("2006/01/02 15:04:05")
 				return &formatted
 			}
 			return nil
 		}(),
-		Distance:      order.Distance,
-		Duration:      order.Duration,
-		Fare:          order.Fare,
-		Tolls:         order.Tolls,
-		Status:        order.Status,
-		Comment:       order.Comment,
-		PaymentStatus: func() string {
-			if order.PaymentStatus == "" {
-				return "pending"
-			}
-			return order.PaymentStatus
-		}(),
+		Distance: order.Distance,
+		Duration: order.Duration,
+		Fare:     order.Fare,
+		Status:   order.Status,
+		Comment:  order.Comment,
 		PaymentTime: func() *string {
 			if order.PaymentTime != nil {
-				formatted := order.PaymentTime.Format(time.RFC3339)
+				formatted := order.PaymentTime.Format("2006/01/02 15:04:05")
 				return &formatted
 			}
 			return nil
 		}(),
-		CancelReason:  order.CancelReason,
-		DriverRating:  order.DriverRating,
-		UserRating:    order.UserRating,
-		IsRecommended: order.IsRecommended,
+		CancelReason: order.CancelReason,
 	}
 
 	// 返回成功响应
 	log.Info("查询订单详情成功", "id", orderIDNum)
 	response.Success(c, orderResp)
+}
+
+// GetUnfinishedOrder 处理查询用户未完成订单请求
+func GetUnfinishedOrder(c *gin.Context) {
+	// 从上下文中获取用户信息
+	payload, exists := c.Get("payload")
+	if !exists {
+		log.Error("无法获取用户信息")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 断言 payload 为 jwt.Claims 类型
+	claims, ok := payload.(*jwt.Claims)
+	if !ok {
+		log.Error("用户信息类型错误")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 查询用户未完成的订单
+	// 未完成订单指的是状态不是"completed"也不是"cancelled"的订单
+	var order model.RideOrder
+	err := database.DB.Where("user_open_id = ? AND status NOT IN (?, ?)",
+		claims.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
+		First(&order).Error
+
+	// 如果没有找到未完成的订单，返回空
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Info("用户没有未完成的订单", "user_open_id", claims.OpenID)
+			response.Success(c, nil)
+			return
+		} else {
+			log.Error("数据库查询失败", "error", err)
+			response.Fail(c, response.ErrDatabase.WithOrigin(err))
+			return
+		}
+	}
+
+	// 转换为响应格式
+	orderResp := OrderResponse{
+		ID:            order.ID,
+		UserOpenID:    order.UserOpenID,
+		DriverOpenID:  order.DriverOpenID,
+		VehicleID:     order.VehicleID,
+		StartLocation: order.StartLocation,
+		EndLocation:   order.EndLocation,
+		RoutePoints:   order.RoutePoints,
+		StartTime: func() *string {
+			if order.StartTime != nil {
+				formatted := order.StartTime.Format("2006/01/02 15:04:05")
+				return &formatted
+			}
+			return nil
+		}(),
+		EndTime: func() *string {
+			if order.EndTime != nil {
+				formatted := order.EndTime.Format("2006/01/02 15:04:05")
+				return &formatted
+			}
+			return nil
+		}(),
+		Distance: order.Distance,
+		Duration: order.Duration,
+		Fare:     order.Fare,
+		Status:   order.Status,
+		Comment:  order.Comment,
+		PaymentTime: func() *string {
+			if order.PaymentTime != nil {
+				formatted := order.PaymentTime.Format("2006/01/02 15:04:05")
+				return &formatted
+			}
+			return nil
+		}(),
+		CancelReason: order.CancelReason,
+	}
+
+	// 返回成功响应
+	log.Info("查询用户未完成订单成功", "user_open_id", claims.OpenID, "order_id", order.ID)
+	response.Success(c, orderResp)
+}
+
+type T struct {
+	Id     int `json:"id"`
+	Points []struct {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+	} `json:"points"`
+	Distance      int           `json:"distance"`
+	Duration      int           `json:"duration"`
+	Tolls         int           `json:"tolls"`
+	Tags          []interface{} `json:"tags"`
+	IsRecommended bool          `json:"isRecommended"`
+	Restriction   struct {
+		Status int `json:"status"`
+	} `json:"restriction"`
+	Steps []struct {
+		Instruction     string `json:"instruction"`
+		PolylineIdx     []int  `json:"polyline_idx"`
+		RoadName        string `json:"road_name"`
+		DirDesc         string `json:"dir_desc"`
+		Distance        int    `json:"distance"`
+		ActDesc         string `json:"act_desc"`
+		AccessorialDesc string `json:"accessorial_desc"`
+	} `json:"steps"`
+	RawData struct {
+		Mode              string `json:"mode"`
+		Distance          int    `json:"distance"`
+		Duration          int    `json:"duration"`
+		TrafficLightCount int    `json:"traffic_light_count"`
+		Toll              int    `json:"toll"`
+		Restriction       struct {
+			Status int `json:"status"`
+		} `json:"restriction"`
+		Polyline []float64 `json:"polyline"`
+		Steps    []struct {
+			Instruction     string `json:"instruction"`
+			PolylineIdx     []int  `json:"polyline_idx"`
+			RoadName        string `json:"road_name"`
+			DirDesc         string `json:"dir_desc"`
+			Distance        int    `json:"distance"`
+			ActDesc         string `json:"act_desc"`
+			AccessorialDesc string `json:"accessorial_desc"`
+		} `json:"steps"`
+		Tags     []interface{} `json:"tags"`
+		TaxiFare struct {
+			Fare int `json:"fare"`
+		} `json:"taxi_fare"`
+	} `json:"rawData"`
+	StartLocation struct {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+		Name      string  `json:"name"`
+	} `json:"startLocation"`
+	EndLocation struct {
+		Name      string  `json:"name"`
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+		Address   string  `json:"address"`
+		Province  string  `json:"province"`
+		City      string  `json:"city"`
+		District  string  `json:"district"`
+	} `json:"endLocation"`
 }
