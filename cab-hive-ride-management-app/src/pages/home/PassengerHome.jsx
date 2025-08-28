@@ -60,6 +60,13 @@ const PassengerHome = () => {
   });
 
   // 当没有未完成订单时显示 RideOrderPage
+  // 当订单状态为 waiting_for_payment 时跳转到 PaymentPage
+  if (unfinishedOrder && unfinishedOrder.status === "waiting_for_payment") {
+    Taro.navigateTo({
+      url: `/pages/home/PaymentPage?order=${encodeURIComponent(JSON.stringify(unfinishedOrder))}`
+    });
+  }
+  
   return (
     <>
       {!unfinishedOrder ? (

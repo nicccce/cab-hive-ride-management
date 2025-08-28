@@ -2,6 +2,7 @@ export default defineAppConfig({
   pages: [
     'pages/profile/index',
     'pages/home/index',
+    'pages/home/PaymentPage',
     'pages/booking/index',
     'pages/driver-register/index',
     'pages/driver-info/index',
