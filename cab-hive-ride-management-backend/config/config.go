@@ -17,7 +17,8 @@ type Config struct {
 	JWT      JWT
 	Log      Log
 	WeChat   WeChat `yaml:"wechat"`
-	OSS      OSS
+	OSS      OSS    `yaml:"oss"`
+	AliPay   AliPay `yaml:"alipay"`
 }
 
 // OSS 配置
@@ -60,4 +61,15 @@ type WeChat struct {
 	AppSecret string `envconfig:"APP_SECRET" yaml:"app_secret" mapstructure:"app_secret"`
 	Token     string `envconfig:"TOKEN" yaml:"token" mapstructure:"token"`
 	AESKey    string `envconfig:"AES_KEY" yaml:"aes_key" mapstructure:"aes_key"`
+}
+
+type AliPay struct {
+	AppID        string `yaml:"app_id" mapstructure:"app_id"`
+	PrivateKey   string `yaml:"private_key" mapstructure:"private_key"`
+	PublicKey    string `yaml:"public_key" mapstructure:"public_key"`
+	NotifyURL    string `yaml:"notify_url" mapstructure:"notify_url"`
+	ReturnURL    string `yaml:"return_url" mapstructure:"return_url"`
+	ServerURL    string `yaml:"server_url" mapstructure:"server_url"`
+	SellerID     string `yaml:"seller_id" mapstructure:"seller_id"`
+	IsProduction bool   `yaml:"is_production" mapstructure:"is_production"`
 }

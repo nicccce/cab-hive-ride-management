@@ -1,6 +1,6 @@
-// Package ride provides the implementation of ride order management functionality.
+// Package order provides the implementation of order order management functionality.
 // This includes creating immediate orders, retrieving order details, and managing order status in Redis.
-package ride
+package order
 
 import (
 	"cab-hive/internal/global/database"
@@ -80,6 +80,21 @@ type OrderResponse struct {
 	Comment       string                `json:"comment"`
 	CancelReason  string                `json:"cancel_reason"`
 	Rating        int                   `json:"rating"`
+	ReserveTime   *string               `json:"reserve_time"` // 预约时间
+}
+
+// OrderListResponse 定义订单列表响应的结构体
+type OrderListResponse struct {
+	Orders     []OrderResponse `json:"orders"`
+	Pagination Pagination      `json:"pagination"`
+}
+
+// Pagination 定义分页信息的结构体
+type Pagination struct {
+	CurrentPage int `json:"current_page"`
+	PageSize    int `json:"page_size"`
+	TotalCount  int64 `json:"total_count"`
+	TotalPages  int `json:"total_pages"`
 }
 
 // CreateImmediateOrder 处理前端传来的立即出发订单内容
@@ -115,7 +130,7 @@ func CreateImmediateOrder(c *gin.Context) {
 	}
 
 	// 检查用户是否有未完成的订单
-	var unfinishedOrder model.RideOrder
+	var unfinishedOrder model.Order
 	err := database.DB.Where("user_open_id = ? AND status NOT IN (?, ?)",
 		payload.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
 		First(&unfinishedOrder).Error
@@ -134,7 +149,7 @@ func CreateImmediateOrder(c *gin.Context) {
 
 	// 创建订单对象
 	now := time.Now()
-	order := model.RideOrder{
+	order := model.Order{
 		UserOpenID:    payload.OpenID,
 		StartLocation: req.StartLocation,
 		EndLocation:   req.EndLocation,
@@ -202,7 +217,7 @@ func RemoveOrderFromRedis(orderID uint, status string) error {
 
 // AddOrderToRedisStatusSet 将订单添加到Redis中指定状态的集合，并存储订单内容和地理位置索引
 // 当订单状态改变时调用此函数
-func AddOrderToRedisStatusSet(order *model.RideOrder) error {
+func AddOrderToRedisStatusSet(order *model.Order) error {
 	redisClient := redis.RedisClient
 	ctx := context.Background()
 
@@ -273,7 +288,7 @@ func GetOrder(c *gin.Context) {
 	}
 
 	// 查找订单
-	var order model.RideOrder
+	var order model.Order
 	query := database.DB.Where("id = ?", orderIDNum)
 
 	// 如果不是管理员，只查询当前用户的订单
@@ -328,6 +343,14 @@ func GetOrder(c *gin.Context) {
 			return nil
 		}(),
 		CancelReason: order.CancelReason,
+		Rating:       order.Rating,
+		ReserveTime: func() *string {
+			if order.ReserveTime != nil {
+				formatted := order.ReserveTime.Format("2006/01/02 15:04:05")
+				return &formatted
+			}
+			return nil
+		}(),
 	}
 
 	// 返回成功响应
@@ -355,7 +378,7 @@ func GetUnfinishedOrder(c *gin.Context) {
 
 	// 查询用户未完成的订单
 	// 未完成订单指的是状态不是"completed"也不是"cancelled"的订单
-	var order model.RideOrder
+	var order model.Order
 	err := database.DB.Where("user_open_id = ? AND status NOT IN (?, ?)",
 		claims.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
 		First(&order).Error
@@ -409,11 +432,494 @@ func GetUnfinishedOrder(c *gin.Context) {
 			return nil
 		}(),
 		CancelReason: order.CancelReason,
+		Rating:       order.Rating,
+		ReserveTime: func() *string {
+			if order.ReserveTime != nil {
+				formatted := order.ReserveTime.Format("2006/01/02 15:04:05")
+				return &formatted
+			}
+			return nil
+		}(),
 	}
 
 	// 返回成功响应
 	log.Info("查询用户未完成订单成功", "user_open_id", claims.OpenID, "order_id", order.ID)
 	response.Success(c, orderResp)
+}
+
+// GetDriverUnfinishedOrder 处理查询司机未完成订单请求
+func GetDriverUnfinishedOrder(c *gin.Context) {
+	// 从上下文中获取司机信息
+	payload, exists := c.Get("payload")
+	if !exists {
+		log.Error("无法获取司机信息")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 断言 payload 为 jwt.Claims 类型
+	claims, ok := payload.(*jwt.Claims)
+	if !ok {
+		log.Error("司机信息类型错误")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 查询司机未完成的订单
+	// 未完成订单指的是状态不是"completed"也不是"cancelled"的订单
+	var order model.Order
+	err := database.DB.Where("driver_open_id = ? AND status NOT IN (?, ?)",
+		claims.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
+		First(&order).Error
+
+	// 如果没有找到未完成的订单，返回空
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Info("司机没有未完成的订单", "driver_open_id", claims.OpenID)
+			response.Success(c, nil)
+			return
+		} else {
+			log.Error("数据库查询失败", "error", err)
+			response.Fail(c, response.ErrDatabase.WithOrigin(err))
+			return
+		}
+	}
+
+	// 转换为响应格式
+	orderResp := OrderResponse{
+		ID:            order.ID,
+		UserOpenID:    order.UserOpenID,
+		DriverOpenID:  order.DriverOpenID,
+		VehicleID:     order.VehicleID,
+		StartLocation: order.StartLocation,
+		EndLocation:   order.EndLocation,
+		RoutePoints:   order.RoutePoints,
+		StartTime: func() *string {
+			if order.StartTime != nil {
+				formatted := order.StartTime.Format("2006/01/02 15:04:05")
+				return &formatted
+			}
+			return nil
+		}(),
+		EndTime: func() *string {
+			if order.EndTime != nil {
+				formatted := order.EndTime.Format("2006/01/02 15:04:05")
+				return &formatted
+			}
+			return nil
+		}(),
+		Distance: order.Distance,
+		Duration: order.Duration,
+		Fare:     order.Fare,
+		Status:   order.Status,
+		Comment:  order.Comment,
+		PaymentTime: func() *string {
+			if order.PaymentTime != nil {
+				formatted := order.PaymentTime.Format("2006/01/02 15:04:05")
+				return &formatted
+			}
+			return nil
+		}(),
+		CancelReason: order.CancelReason,
+		Rating:       order.Rating,
+		ReserveTime: func() *string {
+			if order.ReserveTime != nil {
+				formatted := order.ReserveTime.Format("2006/01/02 15:04:05")
+				return &formatted
+			}
+			return nil
+		}(),
+	}
+
+	// 返回成功响应
+	log.Info("查询司机未完成订单成功", "driver_open_id", claims.OpenID, "order_id", order.ID)
+	response.Success(c, orderResp)
+}
+
+// GetUserOrders 处理查询用户所有订单请求（支持分页和条件查询）
+func GetUserOrders(c *gin.Context) {
+	// 从上下文中获取用户信息
+	payload, exists := c.Get("payload")
+	if !exists {
+		log.Error("无法获取用户信息")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 断言 payload 为 jwt.Claims 类型
+	claims, ok := payload.(*jwt.Claims)
+	if !ok {
+		log.Error("用户信息类型错误")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 获取查询参数
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("page_size", "10")
+	status := c.Query("status")
+	startTime := c.Query("start_time")
+	endTime := c.Query("end_time")
+
+	// 解析分页参数
+	pageNum := 1
+	size := 10
+	fmt.Sscanf(page, "%d", &pageNum)
+	fmt.Sscanf(pageSize, "%d", &size)
+
+	// 构建查询条件
+	query := database.DB.Model(&model.Order{}).Where("user_open_id = ?", claims.OpenID)
+
+	// 添加状态查询条件
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	// 添加时间范围查询条件
+	if startTime != "" {
+		query = query.Where("start_time >= ?", startTime)
+	}
+	if endTime != "" {
+		query = query.Where("start_time <= ?", endTime)
+	}
+
+	// 计算总数
+	var total int64
+	query.Count(&total)
+
+	// 计算偏移量
+	offset := (pageNum - 1) * size
+
+	// 查询订单列表
+	var orders []model.Order
+	if err := query.Offset(offset).Limit(size).Order("id DESC").Find(&orders).Error; err != nil {
+		log.Error("查询用户订单列表失败", "error", err)
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 转换为响应格式
+	orderList := make([]OrderResponse, len(orders))
+	for i, order := range orders {
+		orderList[i] = OrderResponse{
+			ID:            order.ID,
+			UserOpenID:    order.UserOpenID,
+			DriverOpenID:  order.DriverOpenID,
+			VehicleID:     order.VehicleID,
+			StartLocation: order.StartLocation,
+			EndLocation:   order.EndLocation,
+			RoutePoints:   order.RoutePoints,
+			StartTime: func() *string {
+				if order.StartTime != nil {
+					formatted := order.StartTime.Format("2006/01/02 15:04:05")
+					return &formatted
+				}
+				return nil
+			}(),
+			EndTime: func() *string {
+				if order.EndTime != nil {
+					formatted := order.EndTime.Format("2006/01/02 15:04:05")
+					return &formatted
+				}
+				return nil
+			}(),
+			Distance: order.Distance,
+			Duration: order.Duration,
+			Fare:     order.Fare,
+			Status:   order.Status,
+			Comment:  order.Comment,
+			PaymentTime: func() *string {
+				if order.PaymentTime != nil {
+					formatted := order.PaymentTime.Format("2006/01/02 15:04:05")
+					return &formatted
+				}
+				return nil
+			}(),
+			CancelReason: order.CancelReason,
+			Rating:       order.Rating,
+			ReserveTime: func() *string {
+				if order.ReserveTime != nil {
+					formatted := order.ReserveTime.Format("2006/01/02 15:04:05")
+					return &formatted
+				}
+				return nil
+			}(),
+		}
+	}
+
+	// 计算总页数
+	totalPages := int((total + int64(size) - 1) / int64(size))
+
+	// 构造响应数据
+	resp := OrderListResponse{
+		Orders: orderList,
+		Pagination: Pagination{
+			CurrentPage: pageNum,
+			PageSize:    size,
+			TotalCount:  total,
+			TotalPages:  totalPages,
+		},
+	}
+
+	// 返回成功响应
+	log.Info("查询用户订单列表成功", "user_open_id", claims.OpenID, "total", total)
+	response.Success(c, resp)
+}
+
+// GetDriverOrders 处理查询司机所有订单请求（支持分页和条件查询）
+func GetDriverOrders(c *gin.Context) {
+	// 从上下文中获取司机信息
+	payload, exists := c.Get("payload")
+	if !exists {
+		log.Error("无法获取司机信息")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 断言 payload 为 jwt.Claims 类型
+	claims, ok := payload.(*jwt.Claims)
+	if !ok {
+		log.Error("司机信息类型错误")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 获取查询参数
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("page_size", "10")
+	status := c.Query("status")
+	startTime := c.Query("start_time")
+	endTime := c.Query("end_time")
+
+	// 解析分页参数
+	pageNum := 1
+	size := 10
+	fmt.Sscanf(page, "%d", &pageNum)
+	fmt.Sscanf(pageSize, "%d", &size)
+
+	// 构建查询条件
+	query := database.DB.Model(&model.Order{}).Where("driver_open_id = ?", claims.OpenID)
+
+	// 添加状态查询条件
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	// 添加时间范围查询条件
+	if startTime != "" {
+		query = query.Where("start_time >= ?", startTime)
+	}
+	if endTime != "" {
+		query = query.Where("start_time <= ?", endTime)
+	}
+
+	// 计算总数
+	var total int64
+	query.Count(&total)
+
+	// 计算偏移量
+	offset := (pageNum - 1) * size
+
+	// 查询订单列表
+	var orders []model.Order
+	if err := query.Offset(offset).Limit(size).Order("id DESC").Find(&orders).Error; err != nil {
+		log.Error("查询司机订单列表失败", "error", err)
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 转换为响应格式
+	orderList := make([]OrderResponse, len(orders))
+	for i, order := range orders {
+		orderList[i] = OrderResponse{
+			ID:            order.ID,
+			UserOpenID:    order.UserOpenID,
+			DriverOpenID:  order.DriverOpenID,
+			VehicleID:     order.VehicleID,
+			StartLocation: order.StartLocation,
+			EndLocation:   order.EndLocation,
+			RoutePoints:   order.RoutePoints,
+			StartTime: func() *string {
+				if order.StartTime != nil {
+					formatted := order.StartTime.Format("2006/01/02 15:04:05")
+					return &formatted
+				}
+				return nil
+			}(),
+			EndTime: func() *string {
+				if order.EndTime != nil {
+					formatted := order.EndTime.Format("2006/01/02 15:04:05")
+					return &formatted
+				}
+				return nil
+			}(),
+			Distance: order.Distance,
+			Duration: order.Duration,
+			Fare:     order.Fare,
+			Status:   order.Status,
+			Comment:  order.Comment,
+			PaymentTime: func() *string {
+				if order.PaymentTime != nil {
+					formatted := order.PaymentTime.Format("2006/01/02 15:04:05")
+					return &formatted
+				}
+				return nil
+			}(),
+			CancelReason: order.CancelReason,
+			Rating:       order.Rating,
+			ReserveTime: func() *string {
+				if order.ReserveTime != nil {
+					formatted := order.ReserveTime.Format("2006/01/02 15:04:05")
+					return &formatted
+				}
+				return nil
+			}(),
+		}
+	}
+
+	// 计算总页数
+	totalPages := int((total + int64(size) - 1) / int64(size))
+
+	// 构造响应数据
+	resp := OrderListResponse{
+		Orders: orderList,
+		Pagination: Pagination{
+			CurrentPage: pageNum,
+			PageSize:    size,
+			TotalCount:  total,
+			TotalPages:  totalPages,
+		},
+	}
+
+	// 返回成功响应
+	log.Info("查询司机订单列表成功", "driver_open_id", claims.OpenID, "total", total)
+	response.Success(c, resp)
+}
+
+// GetAllOrders 处理管理员查询所有订单请求（支持分页和条件查询）
+func GetAllOrders(c *gin.Context) {
+	// 获取查询参数
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("page_size", "10")
+	status := c.Query("status")
+	userOpenID := c.Query("user_open_id")
+	driverOpenID := c.Query("driver_open_id")
+	startTime := c.Query("start_time")
+	endTime := c.Query("end_time")
+
+	// 解析分页参数
+	pageNum := 1
+	size := 10
+	fmt.Sscanf(page, "%d", &pageNum)
+	fmt.Sscanf(pageSize, "%d", &size)
+
+	// 构建查询条件
+	query := database.DB.Model(&model.Order{})
+
+	// 添加状态查询条件
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	// 添加用户OpenID查询条件
+	if userOpenID != "" {
+		query = query.Where("user_open_id = ?", userOpenID)
+	}
+
+	// 添加司机OpenID查询条件
+	if driverOpenID != "" {
+		query = query.Where("driver_open_id = ?", driverOpenID)
+	}
+
+	// 添加时间范围查询条件
+	if startTime != "" {
+		query = query.Where("start_time >= ?", startTime)
+	}
+	if endTime != "" {
+		query = query.Where("start_time <= ?", endTime)
+	}
+
+	// 计算总数
+	var total int64
+	query.Count(&total)
+
+	// 计算偏移量
+	offset := (pageNum - 1) * size
+
+	// 查询订单列表
+	var orders []model.Order
+	if err := query.Offset(offset).Limit(size).Order("id DESC").Find(&orders).Error; err != nil {
+		log.Error("查询所有订单列表失败", "error", err)
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 转换为响应格式
+	orderList := make([]OrderResponse, len(orders))
+	for i, order := range orders {
+		orderList[i] = OrderResponse{
+			ID:            order.ID,
+			UserOpenID:    order.UserOpenID,
+			DriverOpenID:  order.DriverOpenID,
+			VehicleID:     order.VehicleID,
+			StartLocation: order.StartLocation,
+			EndLocation:   order.EndLocation,
+			RoutePoints:   order.RoutePoints,
+			StartTime: func() *string {
+				if order.StartTime != nil {
+					formatted := order.StartTime.Format("2006/01/02 15:04:05")
+					return &formatted
+				}
+				return nil
+			}(),
+			EndTime: func() *string {
+				if order.EndTime != nil {
+					formatted := order.EndTime.Format("2006/01/02 15:04:05")
+					return &formatted
+				}
+				return nil
+			}(),
+			Distance: order.Distance,
+			Duration: order.Duration,
+			Fare:     order.Fare,
+			Status:   order.Status,
+			Comment:  order.Comment,
+			PaymentTime: func() *string {
+				if order.PaymentTime != nil {
+					formatted := order.PaymentTime.Format("2006/01/02 15:04:05")
+					return &formatted
+				}
+				return nil
+			}(),
+			CancelReason: order.CancelReason,
+			Rating:       order.Rating,
+			ReserveTime: func() *string {
+				if order.ReserveTime != nil {
+					formatted := order.ReserveTime.Format("2006/01/02 15:04:05")
+					return &formatted
+				}
+				return nil
+			}(),
+		}
+	}
+
+	// 计算总页数
+	totalPages := int((total + int64(size) - 1) / int64(size))
+
+	// 构造响应数据
+	resp := OrderListResponse{
+		Orders: orderList,
+		Pagination: Pagination{
+			CurrentPage: pageNum,
+			PageSize:    size,
+			TotalCount:  total,
+			TotalPages:  totalPages,
+		},
+	}
+
+	// 返回成功响应
+	log.Info("查询所有订单列表成功", "total", total)
+	response.Success(c, resp)
 }
 
 type T struct {

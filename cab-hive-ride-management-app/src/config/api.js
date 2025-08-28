@@ -26,6 +26,12 @@ export const API_ENDPOINTS = {
   VEHICLE_SELF_PENDING: '/api/drivers/vehicles/pending',
   VEHICLE_SUBMIT: '/api/drivers/vehicles/register',
   VEHICLE_UPDATE: '/api/drivers/vehicles',
+  
+  // 订单相关
+  ORDER_CREATE: '/api/orders/immediate',
+  ORDER_DETAIL: '/api/orders',
+  ORDER_UNFINISHED: '/api/orders/unfinished',
+  ORDER_DRIVER_UNFINISHED: '/api/orders/driver/unfinished',
 }
 
 // 角色定义

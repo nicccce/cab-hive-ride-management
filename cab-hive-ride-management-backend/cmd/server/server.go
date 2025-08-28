@@ -40,6 +40,9 @@ func Init() {
 func Run() {
 	gin.SetMode(string(config.Get().Mode))
 	r := gin.New()
+	
+	// 加载HTML模板
+	r.LoadHTMLGlob("templates/*")
 
 	switch config.Get().Mode {
 	case config.ModeRelease:

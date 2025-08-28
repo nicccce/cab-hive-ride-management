@@ -29,8 +29,8 @@ type RouteStep struct {
 	AccessorialDesc string `json:"accessorial_desc"`
 }
 
-// RideOrder 定义订单信息的结构体
-type RideOrder struct {
+// Order 定义订单信息的结构体
+type Order struct {
 	Model
 	UserOpenID    string          `gorm:"type:varchar(50);index;not null"`               // 用户OpenID
 	DriverOpenID  string          `gorm:"type:varchar(50);index"`                        // 司机OpenID
@@ -49,6 +49,7 @@ type RideOrder struct {
 	PaymentTime   *time.Time      `gorm:"type:timestamptz"`                              // 支付时间
 	CancelReason  string          `gorm:"type:text"`                                     // 取消原因
 	Rating        int             `gorm:"type:int;default:0"`                            // 司机评分
+	ReserveTime   *time.Time      `gorm:"type:timestamptz"`                              //预约时间
 }
 
 // 实现 driver.Valuer 和 sql.Scanner 接口以便在数据库中存储 JSON
@@ -87,6 +88,7 @@ func (rs *RouteStep) Scan(value interface{}) error {
 
 // OrderStatus 订单状态枚举
 const (
+	OrderStatusReserved          = "reserved"            // 预约中
 	OrderStatusWaitingForDriver  = "waiting_for_driver"  // 等待司机接单
 	OrderStatusWaitingForPickup  = "waiting_for_pickup"  // 等待司机到达起点
 	OrderStatusDriverArrived     = "driver_arrived"      // 等待司机接客
