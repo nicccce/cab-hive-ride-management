@@ -504,6 +504,461 @@ components:
         '401':
           description: Unauthorized
           content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+ /rides/immediate:
+   post:
+     summary: Create Immediate Ride Order
+     description: Create a new ride order for immediate departure.
+     operationId: createImmediateOrder
+     security:
+       - BearerAuth: []
+     requestBody:
+       required: true
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/CreateImmediateOrderRequest'
+     responses:
+       '200':
+         description: Order created successfully
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+             example:
+               code: 200
+               msg: Success
+               data:
+                 order_id: 1
+               timestamp: 2025-07-16T10:30:00Z
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+ /rides/{id}:
+   get:
+     summary: Get Ride Order Details
+     description: Get details of a specific ride order.
+     operationId: getRideOrder
+     security:
+       - BearerAuth: []
+     parameters:
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: integer
+     responses:
+       '200':
+         description: Successful response
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+             example:
+               code: 200
+               msg: Success
+               data:
+                 id: 1
+                 create_time: 1678886400000
+                 update_time: 1678886400000
+                 user_open_id: openid_user1
+                 driver_open_id: ""
+                 vehicle_id: 0
+                 start_location:
+                   latitude: 36.68013
+                   longitude: 117.06533
+                   name: 当前位置
+                 end_location:
+                   name: 山东大学(中心校区)
+                   latitude: 36.675681
+                   longitude: 117.059985
+                   address: 山东省济南市历城区山大南路27号
+                   province: 山东省
+                   city: 济南市
+                   district: 历城区
+                 route_points:
+                   - latitude: 36.680143
+                     longitude: 117.06532
+                 route_data:
+                   distance: 1240
+                   duration: 5
+                   traffic_light_count: 1
+                   toll: 0
+                   restriction_status: 1
+                   polyline:
+                     - 36.680143
+                     - 117.06532
+                     - -31
+                     - -62
+                     - 0
+                     - 0
+                   steps:
+                     - instruction: 沿内部道路行驶6米,左转
+                       road_name: 内部道路
+                       dir_desc: ""
+                       distance: 6
+                       act_desc: 左转
+                       accessorial_desc: ""
+                   tags: []
+                 start_time: null
+                 end_time: null
+                 distance: 1.24
+                 duration: 5
+                 fare: 8
+                 tolls: 8
+                 status: waiting_for_driver
+                 comment: ""
+                 payment_status: pending
+                 payment_time: null
+                 cancel_reason: ""
+                 driver_rating: 0
+                 user_rating: 0
+                 is_recommended: true
+               timestamp: 2025-07-16T10:30:00Z
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+components:
+ schemas:
+   CreateImmediateOrderRequest:
+     type: object
+     properties:
+       id:
+         type: integer
+       points:
+         type: array
+         items:
+           $ref: '#/components/schemas/LocationPoint'
+       distance:
+         type: integer
+       duration:
+         type: integer
+       tolls:
+         type: number
+         format: float
+       tags:
+         type: array
+         items:
+           type: string
+       isRecommended:
+         type: boolean
+       restriction:
+         $ref: '#/components/schemas/Restriction'
+       steps:
+         type: array
+         items:
+           $ref: '#/components/schemas/RouteStep'
+       rawData:
+         $ref: '#/components/schemas/RawData'
+       startLocation:
+         $ref: '#/components/schemas/Location'
+       endLocation:
+         $ref: '#/components/schemas/Location'
+
+   LocationPoint:
+     type: object
+     properties:
+       latitude:
+         type: number
+         format: float
+       longitude:
+         type: number
+         format: float
+
+   Restriction:
+     type: object
+     properties:
+       status:
+         type: integer
+
+   RouteStep:
+     type: object
+     properties:
+       instruction:
+         type: string
+       road_name:
+         type: string
+       dir_desc:
+         type: string
+       distance:
+         type: integer
+       act_desc:
+         type: string
+       accessorial_desc:
+         type: string
+
+   RawData:
+     type: object
+     properties:
+       mode:
+         type: string
+       distance:
+         type: integer
+       duration:
+         type: integer
+       traffic_light_count:
+         type: integer
+       toll:
+         type: integer
+       restriction:
+         $ref: '#/components/schemas/Restriction'
+       polyline:
+         type: array
+         items:
+           type: number
+           format: float
+       steps:
+         type: array
+         items:
+           $ref: '#/components/schemas/RouteStep'
+       tags:
+         type: array
+         items:
+           type: string
+       taxi_fare:
+         $ref: '#/components/schemas/TaxiFare'
+
+   TaxiFare:
+     type: object
+     properties:
+       fare:
+         type: number
+         format: float
+
+   Location:
+     type: object
+     properties:
+       latitude:
+         type: number
+         format: float
+       longitude:
+         type: number
+         format: float
+       name:
+         type: string
+       address:
+         type: string
+       province:
+         type: string
+       city:
+         type: string
+       district:
+         type: string
+
+ /rides/immediate:
+   post:
+     summary: Create Immediate Ride Order
+     description: Create a new ride order for immediate departure.
+     operationId: createImmediateOrder
+     security:
+       - BearerAuth: []
+     requestBody:
+       required: true
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/CreateImmediateOrderRequest'
+     responses:
+       '200':
+         description: Order created successfully
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+             example:
+               code: 200
+               msg: Success
+               data:
+                 order_id: 1
+               timestamp: 2025-07-16T10:30:00Z
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+ /rides/{id}:
+   get:
+     summary: Get Ride Order Details
+     description: Get details of a specific ride order.
+     operationId: getRideOrder
+     security:
+       - BearerAuth: []
+     parameters:
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: integer
+     responses:
+       '200':
+         description: Successful response
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+             example:
+               code: 200
+               msg: Success
+               data:
+                 id: 1
+                 create_time: 1678886400000
+                 update_time: 1678886400000
+                 user_open_id: openid_user1
+                 driver_open_id: ""
+                 vehicle_id: 0
+                 start_location: 起点位置描述
+                 end_location: 终点位置描述
+                 start_time: null
+                 end_time: null
+                 distance: 10.5
+                 fare: 25.0
+                 status: waiting_for_driver
+                 comment: 订单备注
+                 payment_status: pending
+                 payment_time: null
+                 cancel_reason: ""
+                 driver_rating: 0
+                 user_rating: 0
+               timestamp: 2025-07-16T10:30:00Z
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+components:
+ schemas:
+   CreateImmediateOrderRequest:
+     type: object
+     properties:
+       user_open_id:
+         type: string
+         description: User's OpenID
+         example: openid_user1
+       start_location:
+         type: string
+         description: Start location description
+         example: 起点位置描述
+       end_location:
+         type: string
+         description: End location description
+         example: 终点位置描述
+       distance:
+         type: number
+         format: float
+         description: Distance in kilometers
+         example: 10.5
+       fare:
+         type: number
+         format: float
+         description: Fare amount
+         example: 25.0
+       comment:
+         type: string
+         description: Order comment
+         example: 订单备注
+     required:
+       - user_open_id
+       - start_location
+       - end_location
+
+ /rides/immediate:
+   post:
+     summary: Create Immediate Ride Order
+     description: Create a new ride order for immediate departure.
+     operationId: createImmediateOrder
+     security:
+       - BearerAuth: []
+     requestBody:
+       required: true
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/CreateImmediateOrderRequest'
+     responses:
+       '200':
+         description: Order created successfully
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+             example:
+               code: 200
+               msg: Order created successfully
+               data:
+                 id: 1
+                 create_time: 1678886400000
+                 update_time: 1678886400000
+                 user_open_id: openid_user1
+                 driver_open_id: ""
+                 vehicle_id: 0
+                 start_location: 起点位置描述
+                 end_location: 终点位置描述
+                 start_time: null
+                 end_time: null
+                 distance: 10.5
+                 fare: 25.0
+                 status: waiting_for_driver
+                 comment: 订单备注
+                 payment_status: pending
+                 payment_time: null
+                 cancel_reason: ""
+                 driver_rating: 0
+                 user_rating: 0
+               timestamp: 2025-07-16T10:30:00Z
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+components:
+ schemas:
+   CreateImmediateOrderRequest:
+     type: object
+     properties:
+       user_open_id:
+         type: string
+         description: User's OpenID
+         example: openid_user1
+       start_location:
+         type: string
+         description: Start location description
+         example: 起点位置描述
+       end_location:
+         type: string
+         description: End location description
+         example: 终点位置描述
+       distance:
+         type: number
+         format: float
+         description: Distance in kilometers
+         example: 10.5
+       fare:
+         type: number
+         format: float
+         description: Fare amount
+         example: 25.0
+       comment:
+         type: string
+         description: Order comment
+         example: 订单备注
+     required:
+       - user_open_id
+       - start_location
+       - end_location

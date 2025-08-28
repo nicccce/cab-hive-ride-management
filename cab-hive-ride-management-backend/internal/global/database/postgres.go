@@ -21,7 +21,7 @@ var autoMigrateModels = []interface{}{
 	&model.DriverReview{},
 	&model.Vehicle{},
 	&model.VehicleReview{},
-	// 在这里添加其他模型
+	&model.RideOrder{}, // 订单模型
 }
 
 func Init() {

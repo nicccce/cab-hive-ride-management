@@ -31,6 +31,38 @@ INSERT INTO vehicle_reviews (driver_id, plate_number, vehicle_type, brand, model
 ('openid_driver2', '粤C67890', 'SUV', '宝马', 'X3', '蓝色', 2021, 'http://example.com/registration5.jpg', '2025-12-31', 'pending', '', 'submit', 0, NOW(), NOW()),
 ('openid_driver3', '粤D12345', '轿车', '奥迪', 'A4', '白色', 2020, 'http://example.com/registration6.jpg', '2024-08-31', 'pending', '', 'submit', 0, NOW(), NOW());
 
+-- 创建订单表
+CREATE TABLE IF NOT EXISTS ride_orders (
+   id BIGSERIAL PRIMARY KEY,
+   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+   deleted_at TIMESTAMPTZ,
+   user_open_id VARCHAR(50) NOT NULL,
+   driver_open_id VARCHAR(50),
+   vehicle_id BIGINT,
+   start_location JSONB,
+   end_location JSONB,
+   route_points JSONB,
+   route_data JSONB,
+   start_time TIMESTAMPTZ,
+   end_time TIMESTAMPTZ,
+   distance DECIMAL(10,2),
+   duration INTEGER,
+   fare DECIMAL(10,2),
+   tolls DECIMAL(10,2),
+   status VARCHAR(20) NOT NULL DEFAULT 'waiting_for_driver',
+   comment TEXT,
+   payment_status VARCHAR(20) DEFAULT 'pending',
+   payment_time TIMESTAMPTZ,
+   cancel_reason TEXT,
+   driver_rating INTEGER DEFAULT 0,
+   user_rating INTEGER DEFAULT 0,
+   is_recommended BOOLEAN DEFAULT FALSE
+);
+
+-- 创建订单状态索引
+CREATE INDEX IF NOT EXISTS idx_ride_orders_status ON ride_orders(status);
+
 -- 验证数据插入
 SELECT 'Users' as table_name, COUNT(*) as count FROM users
 UNION ALL
@@ -40,4 +72,6 @@ SELECT 'Driver Reviews' as table_name, COUNT(*) as count FROM driver_reviews
 UNION ALL
 SELECT 'Vehicles' as table_name, COUNT(*) as count FROM vehicles
 UNION ALL
-SELECT 'Vehicle Reviews' as table_name, COUNT(*) as count FROM vehicle_reviews;
+SELECT 'Vehicle Reviews' as table_name, COUNT(*) as count FROM vehicle_reviews
+UNION ALL
+SELECT 'Ride Orders' as table_name, COUNT(*) as count FROM ride_orders;

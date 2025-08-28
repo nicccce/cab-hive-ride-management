@@ -442,7 +442,9 @@ const PassengerHome = () => {
     }
   }, [startLocation, endLocation, updateStartLocation, updateEndLocation]);
 
-  const handleNowDepart = () => {};
+  const handleNowDepart = () => {
+    console.log(JSON.stringify({...availableRoutes[selectedRouteIndex],startLocation:startLocation,endLocation:endLocation}));
+  };
   const handleReserveDepart = () => {};
 
   return (
@@ -537,6 +539,9 @@ const PassengerHome = () => {
                         <View className="route-details">
                           <Text className="route-time">{formatDuration(route.duration)}</Text>
                           <Text className="route-distance">{formatDistance(route.distance)}</Text>
+                          {route.tolls > 0 && (
+                            <Text className="route-tolls">{route.tolls}元</Text>
+                          )}
                           {route.tolls > 0 && (
                             <Text className="route-tolls">{route.tolls}元</Text>
                           )}
