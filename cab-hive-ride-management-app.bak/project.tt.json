@@ -1,0 +1,9 @@
+{
+  "miniprogramRoot": "./",
+  "projectname": "cab-hive-ride-management-app",
+  "appid": "testAppId",
+  "setting": {
+    "es6": false,
+    "minified": false
+  }
+}

@@ -1,0 +1,49 @@
+page {
+  background-color: #f7f8fa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
+}
+
+.container {
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+// 全局颜色变量
+:root {
+  --primary-color: #FF6B35;
+  --primary-light: #FFE4DC;
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --error-color: #ff4d4f;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-disabled: #999999;
+  --border-color: #eaeaea;
+  --background-color: #f7f8fa;
+  --white: #ffffff;
+}
+
+// 通用样式
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-disabled {
+  color: var(--text-disabled);
+}
+
+.bg-white {
+  background-color: var(--white);
+}
+
+.border-bottom {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
