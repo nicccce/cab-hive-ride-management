@@ -28,6 +28,16 @@ const PassengerHome = () => {
           setUnfinishedOrder(null);
         } else {
           setUnfinishedOrder(res.data);
+          // 当订单状态为 waiting_for_payment 时跳转到 PaymentPage
+          if (res.data.status === "waiting_for_payment") {
+            console.log("跳转到支付页面，订单信息：", res.data);
+            stopLoop();
+            Taro.navigateTo({
+              url: `/pages/payment/index?order=${encodeURIComponent(
+                JSON.stringify(res.data)
+              )}`,
+            });
+          }
         }
       } catch (error) {
         console.error("获取未完成订单失败：", error);
@@ -59,14 +69,6 @@ const PassengerHome = () => {
     stopLoop();
   });
 
-  // 当没有未完成订单时显示 RideOrderPage
-  // 当订单状态为 waiting_for_payment 时跳转到 PaymentPage
-  if (unfinishedOrder && unfinishedOrder.status === "waiting_for_payment") {
-    Taro.navigateTo({
-      url: `/pages/home/PaymentPage?order=${encodeURIComponent(JSON.stringify(unfinishedOrder))}`
-    });
-  }
-  
   return (
     <>
       {!unfinishedOrder ? (

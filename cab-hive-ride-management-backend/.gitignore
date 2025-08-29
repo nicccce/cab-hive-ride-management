@@ -33,4 +33,4 @@ go.work.sum
 
 #config
 config.yaml
-crt/
+cert/

@@ -12,7 +12,7 @@ export const createPaymentOrder = async (orderId, amount, subject, userId) => {
       url: '/api/payment/create',
       method: 'POST',
       data: {
-        order_id: orderId,     // 订单ID
+        order_id: `${orderId}`,     // 订单ID
         amount: amount,        // 支付金额
         subject: subject,      // 商品标题
         user_id: userId        // 用户ID
@@ -42,7 +42,7 @@ export const queryPaymentStatus = async (orderId) => {
       url: '/api/payment/query',
       method: 'POST',
       data: {
-        order_id: orderId
+        order_id: `${orderId}`
       }
     });
     
