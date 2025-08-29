@@ -1,11 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import useAuth from '../../hooks/useAuth'
-import PassengerHome from './PassengerHome'
-import DriverHome from './DriverHome'
 
 const Home = () => {
   const { isDriver, isBanned } = useAuth()
+  const [Component, setComponent] = useState(null)
 
   useEffect(() => {
     // 根据用户角色设置页面标题
@@ -13,13 +12,28 @@ const Home = () => {
     Taro.setNavigationBarTitle({ title })
   }, [isDriver, isBanned])
 
-  // 司机工作台页面
-  if (isDriver && !isBanned) {
-    return <DriverHome />
+  useEffect(() => {
+    // 动态导入组件
+    const loadComponent = async () => {
+      if (isDriver && !isBanned) {
+        const { default: DriverHome } = await import('./DriverHome')
+        setComponent(() => DriverHome)
+      } else {
+        const { default: PassengerHome } = await import('./PassengerHome')
+        setComponent(() => PassengerHome)
+      }
+    }
+
+    loadComponent()
+  }, [isDriver, isBanned])
+
+  // 显示加载状态或组件
+  if (!Component) {
+    return null
   }
 
-  // 普通用户首页（打车页面）
-  return <PassengerHome />
+  const ComponentToRender = Component
+  return <ComponentToRender />
 }
 
 export default Home

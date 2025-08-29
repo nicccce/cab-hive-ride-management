@@ -238,7 +238,7 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
     <View className="driver-order-panel">
       
       {/* 微信地图组件 */}
-      {isWorking && selectedVehicle && (
+      {
         <Map
           className="map-container"
           longitude={mapConfig.longitude}
@@ -252,9 +252,9 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
           showCompass={mapConfig.showCompass}
           showScale={mapConfig.showScale}
           // 如果有订单，绘制路线
-          {...(currentOrder && currentOrder.route_points && {
+          {...(availableOrder && availableOrder.route_points && {
             polyline: [{
-              points: currentOrder.route_points.map(point => ({
+              points: availableOrder.route_points.map(point => ({
                 longitude: point.longitude,
                 latitude: point.latitude
               })),
@@ -264,7 +264,7 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
             }]
           })}
         />
-      )}
+      }
       
       {renderBottomSection()}
       {renderVehicleSelectionModal()}

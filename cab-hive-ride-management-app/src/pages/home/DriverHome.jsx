@@ -1,11 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { View, Map } from "@tarojs/components";
+import { View } from "@tarojs/components";
 import Taro, { useDidHide, useDidShow } from "@tarojs/taro";
 import useAuth from "../../hooks/useAuth";
 import { getVehicleList } from "../../services/vehicle";
 import DriverOrderPanel from "../../components/DriverOrderPanel/index";
 import "./DriverHome.scss";
-import { getDriverUnfinishedOrder, requestOrder } from "../../services/order";
+import {
+  getDriverUnfinishedOrder,
+  requestOrder,
+  OrderStatus,
+} from "../../services/order";
 import { uploadDriverLocation } from "../../services/location";
 
 const DriverHome = () => {
@@ -21,21 +25,6 @@ const DriverHome = () => {
   const orderPollingTimerRef = useRef(null);
   // 后台任务定时器引用（位置上传等）
   const backgroundTaskTimerRef = useRef(null);
-
-  // 组件卸载时清理定时器
-  useEffect(() => {
-    return () => {
-      // 清理订单轮询定时器
-      if (orderPollingTimerRef.current) {
-        clearInterval(orderPollingTimerRef.current);
-      }
-
-      // 清理后台任务定时器
-      if (backgroundTaskTimerRef.current) {
-        clearInterval(backgroundTaskTimerRef.current);
-      }
-    };
-  }, []);
 
   const checkUnfinishedOrder = async () => {
     try {
@@ -105,13 +94,13 @@ const DriverHome = () => {
     }
   };
 
-  const orderPollingTasks = async() =>{
+  const orderPollingTasks = async () => {
     await checkUnfinishedOrder();
-    if(!unfinishedOrder) {
+    if (!unfinishedOrder && isWorking) {
       // 如果没有进行中的订单，尝试获取可用订单
       await getAvailableOrder();
     }
-  }
+  };
 
   const backgroundTasks = async () => {
     await uploadLocation();
@@ -147,25 +136,23 @@ const DriverHome = () => {
     // 设置新的定时器，每30秒执行一次后台任务
     backgroundTaskTimerRef.current = setInterval(async () => {
       await backgroundTasks();
-    }, 30000); // 30秒执行一次
+    }, 5000); // 5秒执行一次
   };
 
   // 停止后台任务
-  const stopBackgroundTasks = () => {
-    if (backgroundTaskTimerRef.current) {
-      clearInterval(backgroundTaskTimerRef.current);
-    }
-  };
+  // const stopBackgroundTasks = () => {
+  //   if (backgroundTaskTimerRef.current) {
+  //     clearInterval(backgroundTaskTimerRef.current);
+  //   }
+  // };
 
   // 页面显示时恢复定时
   useDidShow(() => {
     // 恢复订单轮询
     startOrderPolling();
 
-    // 如果司机正在工作，恢复后台任务
-    if (isWorking) {
-      startBackgroundTasks();
-    }
+    // 启动后台任务
+    startBackgroundTasks();
   });
 
   // 页面隐藏时清理插件数据并停止位置跟踪
@@ -177,19 +164,22 @@ const DriverHome = () => {
     // stopBackgroundTasks();
   });
 
-  // 地图初始配置
-  const mapConfig = {
-    longitude: 120.1551, // 杭州经度
-    latitude: 30.2742, // 杭州纬度
-    scale: 16,
-    showLocation: true,
-    enableScroll: true,
-    enableRotate: false,
-    enableZoom: true,
-    enable3D: false,
-    showCompass: false,
-    showScale: true,
-  };
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    startBackgroundTasks();
+    startOrderPolling();
+    return () => {
+      // 清理订单轮询定时器
+      if (orderPollingTimerRef.current) {
+        clearInterval(orderPollingTimerRef.current);
+      }
+
+      // 清理后台任务定时器
+      if (backgroundTaskTimerRef.current) {
+        clearInterval(backgroundTaskTimerRef.current);
+      }
+    };
+  }, []);
 
   // 获取车辆列表
   const fetchVehicles = async () => {
@@ -218,9 +208,6 @@ const DriverHome = () => {
       setSelectedVehicle(vehicle);
       setIsWorking(true);
 
-      // 开始后台任务
-      startBackgroundTasks();
-
       Taro.showToast({
         title: "开始接单",
         icon: "success",
@@ -238,9 +225,6 @@ const DriverHome = () => {
     setIsWorking(false);
     setSelectedVehicle(null);
 
-    // 停止后台任务
-    stopBackgroundTasks();
-
     Taro.showToast({
       title: "已停止接单",
       icon: "success",
@@ -249,34 +233,37 @@ const DriverHome = () => {
 
   return (
     <View className="container">
-      <View className="page-content">
-        {/* 微信地图组件 */}
-        <Map
-          className="map-container"
-          longitude={mapConfig.longitude}
-          latitude={mapConfig.latitude}
-          scale={mapConfig.scale}
-          showLocation={mapConfig.showLocation}
-          enableScroll={mapConfig.enableScroll}
-          enableRotate={mapConfig.enableRotate}
-          enableZoom={mapConfig.enableZoom}
-          enable3D={mapConfig.enable3D}
-          showCompass={mapConfig.showCompass}
-          showScale={mapConfig.showScale}
-        />
-
-        <DriverOrderPanel
-          userInfo={userInfo}
-          vehicles={vehicles}
-          isWorking={isWorking}
-          selectedVehicle={selectedVehicle}
-          onVehicleSelect={selectVehicle}
-          onStartWork={startWork}
-          onStopWork={stopWork}
-          fetchVehicles={fetchVehicles}
-          availableOrder={availableOrder}
-        />
-      </View>
+      <>
+        {!unfinishedOrder ? (
+          <DriverOrderPanel
+            userInfo={userInfo}
+            vehicles={vehicles}
+            isWorking={isWorking}
+            selectedVehicle={selectedVehicle}
+            onVehicleSelect={selectVehicle}
+            onStartWork={startWork}
+            onStopWork={stopWork}
+            fetchVehicles={fetchVehicles}
+            availableOrder={availableOrder}
+          />
+        ) : (
+          (() => {
+            console.log(
+              `啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊宝宝你是个${unfinishedOrder.status}`
+            );
+            switch (unfinishedOrder.status) {
+              case OrderStatus.WaitingForPickup:
+                return <View>等待司机到达起点</View>;
+              case OrderStatus.DriverArrived:
+                return <View>司机已到达，等待上车</View>;
+              case OrderStatus.InProgress:
+                return <View>行程进行中</View>;
+              default:
+                return <View>未知订单状态: {unfinishedOrder.status}</View>;
+            }
+          })()
+        )}
+      </>
     </View>
   );
 };

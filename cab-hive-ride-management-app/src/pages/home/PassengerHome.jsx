@@ -1,5 +1,5 @@
 import Taro, { useDidHide, useDidShow } from "@tarojs/taro";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View } from "@tarojs/components";
 import { getUnfinishedOrder, OrderStatus } from "../../services/order";
 import RideOrderPage from "../../components/RideOrder";
@@ -68,6 +68,13 @@ const PassengerHome = () => {
     // 停止位置跟踪
     stopLoop();
   });
+
+  useEffect(() => {
+    startLoop();
+    return () => {
+      clearInterval(loopRef.current);
+    };
+  }, []);
 
   return (
     <>
