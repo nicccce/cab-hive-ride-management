@@ -15,31 +15,30 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-	go_redis "github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 // RequestOrderResponse 定义请求订单的响应结构
 type RequestOrderResponse struct {
-	ID            uint                  `json:"id"`
-	UserOpenID    string                `json:"user_open_id"`
-	DriverOpenID  string                `json:"driver_open_id"`
-	VehicleID     uint                  `json:"vehicle_id"`
-	StartLocation model.Location        `json:"start_location"`
-	EndLocation   model.Location        `json:"end_location"`
+	ID            uint                 `json:"id"`
+	UserOpenID    string               `json:"user_open_id"`
+	DriverOpenID  string               `json:"driver_open_id"`
+	VehicleID     uint                 `json:"vehicle_id"`
+	StartLocation model.Location       `json:"start_location"`
+	EndLocation   model.Location       `json:"end_location"`
 	RoutePoints   model.LocationPoints `json:"route_points"`
-	StartTime     *string               `json:"start_time"`
-	EndTime       *string               `json:"end_time"`
-	Distance      float64               `json:"distance"`
-	Duration      int                   `json:"duration"`
-	Fare          float64               `json:"fare"`
-	Tolls         float64               `json:"tolls"`
-	Status        string                `json:"status"`
-	PaymentTime   *string               `json:"payment_time"`
-	Comment       string                `json:"comment"`
-	CancelReason  string                `json:"cancel_reason"`
-	Rating        int                   `json:"rating"`
-	ReserveTime   *string               `json:"reserve_time"`
+	StartTime     *string              `json:"start_time"`
+	EndTime       *string              `json:"end_time"`
+	Distance      float64              `json:"distance"`
+	Duration      int                  `json:"duration"`
+	Fare          float64              `json:"fare"`
+	Tolls         float64              `json:"tolls"`
+	Status        string               `json:"status"`
+	PaymentTime   *string              `json:"payment_time"`
+	Comment       string               `json:"comment"`
+	CancelReason  string               `json:"cancel_reason"`
+	Rating        int                  `json:"rating"`
+	ReserveTime   *string              `json:"reserve_time"`
 }
 
 // RequestOrder 处理司机请求订单的请求
@@ -236,22 +235,22 @@ func matchNearestOrder(driverLocation *DriverLocation) (*model.Order, error) {
 	// 从Redis中获取等待司机接单的订单集合
 	ctx := context.Background()
 	redisClient := redis.RedisClient
-	
+
 	// 获取等待司机接单的订单ID集合
 	orderIDs, err := redisClient.SMembers(ctx, "ride_orders:"+model.OrderStatusWaitingForDriver).Result()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 如果没有等待接单的订单，返回错误
 	if len(orderIDs) == 0 {
 		return nil, errors.New("没有等待接单的订单")
 	}
-	
+
 	// 查找最近的订单
 	var nearestOrder *model.Order
 	minDistance := math.MaxFloat64
-	
+
 	// 遍历所有等待接单的订单
 	for _, orderIDStr := range orderIDs {
 		// 获取订单详细信息
@@ -260,38 +259,30 @@ func matchNearestOrder(driverLocation *DriverLocation) (*model.Order, error) {
 		if err != nil {
 			continue // 跳过无法获取的订单
 		}
-		
+
 		// 反序列化订单数据
 		var orderModel model.Order
 		if err := json.Unmarshal([]byte(orderJSON), &orderModel); err != nil {
 			continue // 跳过无法解析的订单
 		}
-		
+
 		// 计算司机与订单起点的距离
-		distance := calculateDistance(
+		distance := calculateDistanceToOrder(
 			driverLocation.Latitude, driverLocation.Longitude,
 			orderModel.StartLocation.Latitude, orderModel.StartLocation.Longitude)
-		
+
 		// 更新最近的订单
 		if distance < minDistance {
 			minDistance = distance
 			nearestOrder = &orderModel
 		}
 	}
-	
+
 	// 如果没有找到合适的订单，返回错误
 	if nearestOrder == nil {
 		return nil, errors.New("没有找到合适的订单")
 	}
-	
+
 	return nearestOrder, nil
 }
 
-// calculateDistance 计算两个经纬度点之间的距离（使用简化公式）
-func calculateDistance(lat1, lon1, lat2, lon2 float64) float64 {
-	// 使用简化公式计算距离（单位：度）
-	// 实际应用中应该使用更精确的公式如Haversine公式
-	deltaLat := lat2 - lat1
-	deltaLon := lon2 - lon1
-	return math.Sqrt(deltaLat*deltaLat + deltaLon*deltaLon)
-}
