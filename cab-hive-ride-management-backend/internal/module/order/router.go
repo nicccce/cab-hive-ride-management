@@ -12,6 +12,10 @@ func (m *ModuleOrder) InitRouter(router *gin.RouterGroup) {
 	// 需要用户认证
 	router.POST("/orders/immediate", middleware.Auth(1), CreateImmediateOrder)
 
+	// 创建预约订单的路由
+	// 需要用户认证
+	router.POST("/orders/reserve", middleware.Auth(1), CreateReserveOrder)
+
 	// 获取订单详情
 	// 需要用户认证
 	router.GET("/orders/:id", middleware.Auth(1), GetOrder)

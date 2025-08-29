@@ -32,4 +32,11 @@ func (m *ModuleRide) InitRouter(r *gin.RouterGroup) {
 		// 获取司机位置
 		rideGroup.GET("/location/:id", GetDriverLocation)
 	}
+	
+	// 管理员路由 - 需要管理呈权限
+	rideGroup.Use(middleware.Auth(3))
+	{
+		// 处理预约订单
+		rideGroup.POST("/orders/process-reserve", ProcessReserveOrders)
+	}
 }

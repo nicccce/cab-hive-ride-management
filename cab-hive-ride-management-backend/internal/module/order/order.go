@@ -31,6 +31,19 @@ type CreateImmediateOrderRequest struct {
 	EndLocation   model.Location        `json:"endLocation"`
 }
 
+// CreateReserveOrderRequest 定义创建预约订单的请求结构
+type CreateReserveOrderRequest struct {
+	Points        []model.LocationPoint `json:"points"`
+	Distance      int                   `json:"distance"`
+	Duration      int                   `json:"duration"`
+	Tolls         float64               `json:"tolls"`
+	Tags          []string              `json:"tags"`
+	Steps         []model.RouteStep     `json:"steps"`
+	StartLocation model.Location        `json:"startLocation"`
+	EndLocation   model.Location        `json:"endLocation"`
+	ReserveTime   string                `json:"reserveTime"` // 预约时间
+}
+
 // Restriction 定义限制信息结构
 type Restriction struct {
 	Status int `json:"status"`
@@ -663,6 +676,109 @@ func GetUserOrders(c *gin.Context) {
 
 	// 返回成功响应
 	log.Info("查询用户订单列表成功", "user_open_id", claims.OpenID, "total", total)
+	response.Success(c, resp)
+}
+
+// CreateReserveOrder 处理前端传来的预约订单内容
+func CreateReserveOrder(c *gin.Context) {
+	// 定义请求结构体并绑定 JSON 数据
+	var req CreateReserveOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Error("绑定创建预约订单请求失败", "error", err)
+		response.Fail(c, response.ErrInvalidRequest.WithOrigin(err))
+		return
+	}
+
+	// 解析预约时间
+	reserveTime, err := time.Parse("2006-01-02 15:04:05", req.ReserveTime)
+	if err != nil {
+		log.Error("解析预约时间失败", "error", err)
+		response.Fail(c, response.ErrInvalidRequest.WithOrigin(err))
+		return
+	}
+
+	// 检查预约时间是否在当前时间之后
+	if reserveTime.Before(time.Now()) {
+		log.Error("预约时间不能早于当前时间")
+		response.Fail(c, response.ErrInvalidRequest.WithTips("预约时间不能早于当前时间"))
+		return
+	}
+
+	// 从上下文中获取载荷
+	payloadInterface, exists := c.Get("payload")
+	if !exists {
+		log.Error("无法获取载荷信息")
+		response.Fail(c, response.ErrTokenInvalid)
+		return
+	}
+
+	payload, ok := payloadInterface.(*jwt.Claims)
+	if !ok {
+		log.Error("载荷类型错误")
+		response.Fail(c, response.ErrTokenInvalid)
+		return
+	}
+
+	// 验证用户是否有权限创建订单
+	if payload.RoleID != 1 && payload.RoleID != 2 {
+		log.Error("用户角色无权限创建订单", "role_id", payload.RoleID)
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 检查用户是否有未完成的订单
+	var unfinishedOrder model.Order
+	err = database.DB.Where("user_open_id = ? AND status NOT IN (?, ?)",
+		payload.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
+		First(&unfinishedOrder).Error
+
+	// 如果找到了未完成的订单，拒绝创建新订单
+	if err == nil {
+		log.Error("用户有未完成的订单，拒绝创建新订单", "user_open_id", payload.OpenID, "order_id", unfinishedOrder.ID)
+		response.Fail(c, response.ErrInvalidRequest.WithTips("用户有未完成的订单，无法创建新订单"))
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		// 如果是其他数据库错误，返回错误响应
+		log.Error("数据库查询失败", "error", err)
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 创建订单对象
+	order := model.Order{
+		UserOpenID:    payload.OpenID,
+		StartLocation: req.StartLocation,
+		EndLocation:   req.EndLocation,
+		RoutePoints:   model.LocationPoints(req.Points),
+		ReserveTime:   &reserveTime,
+		Distance:      float64(req.Distance) / 1000, // 转换为公里
+		Duration:      req.Duration,
+		Fare:          req.Tolls,
+		Status:        model.OrderStatusReserved, // 初始状态为预约中
+	}
+
+	// 保存订单到数据库
+	if err := database.DB.Create(&order).Error; err != nil {
+		log.Error("创建预约订单失败", "error", err)
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 将订单ID和内容添加到Redis中
+	// 注意：结束待付款和已完结状态不需要在Redis中维护
+	if err := AddOrderToRedisStatusSet(&order); err != nil {
+		log.Error("添加预约订单到Redis失败", "error", err, "order_id", order.ID)
+		// 注意：这里不返回错误，因为订单已经成功保存到数据库
+		// Redis操作失败不应该影响主要业务流程
+	}
+
+	// 构造响应数据
+	resp := CreateImmediateOrderResponse{
+		OrderID: order.ID,
+	}
+
+	// 返回成功响应
+	log.Info("创建预约订单成功", "order_id", order.ID)
 	response.Success(c, resp)
 }
 

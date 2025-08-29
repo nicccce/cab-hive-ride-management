@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -291,4 +292,98 @@ func matchNearestOrder(driverLocation *DriverLocation) (*model.Order, error) {
 	}
 
 	return nearestOrder, nil
+}
+
+// ProcessReserveOrders 处理预约订单，将到达预约时间的订单转换为即时单
+func ProcessReserveOrders(c *gin.Context) {
+	// 从上下文中获取载荷
+	payloadInterface, exists := c.Get("payload")
+	if !exists {
+		response.Fail(c, response.ErrTokenInvalid)
+		return
+	}
+
+	payload, ok := payloadInterface.(*jwt.Claims)
+	if !ok {
+		response.Fail(c, response.ErrTokenInvalid)
+		return
+	}
+
+	// 检查用户角色是否为管理员
+	if payload.RoleID != 3 {
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 从Redis中获取所有预约中的订单
+	ctx := context.Background()
+	redisClient := redis.RedisClient
+
+	// 获取预约中订单的ID集合
+	orderIDs, err := redisClient.SMembers(ctx, "ride_orders:"+model.OrderStatusReserved).Result()
+	if err != nil {
+		response.Fail(c, response.ErrServerInternal.WithOrigin(err))
+		return
+	}
+
+	// 如果没有预约中的订单，直接返回成功
+	if len(orderIDs) == 0 {
+		response.Success(c, nil)
+		return
+	}
+
+	// 处理每个预约订单
+	var processedOrders []uint
+	for _, orderIDStr := range orderIDs {
+		// 获取订单详细信息
+		orderKey := fmt.Sprintf("ride_order:%s", orderIDStr)
+		orderJSON, err := redisClient.Get(ctx, orderKey).Result()
+		if err != nil {
+			continue // 跳过无法获取的订单
+		}
+
+		// 反序列化订单数据
+		var orderModel model.Order
+		if err := json.Unmarshal([]byte(orderJSON), &orderModel); err != nil {
+			continue // 跳过无法解析的订单
+		}
+
+		// 检查预约时间是否已到（离预约时间只剩10分钟）
+		if orderModel.ReserveTime != nil && time.Until(*orderModel.ReserveTime) <= 10*time.Minute {
+			// 检查用户是否有进行中的订单
+			var unfinishedOrder model.Order
+			err := database.DB.Where("user_open_id = ? AND status NOT IN (?, ?)",
+				orderModel.UserOpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
+				First(&unfinishedOrder).Error
+
+			// 如果用户没有未完成的订单，则处理该预约订单
+			if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+				// 更新订单状态为等待司机接单
+				orderModel.Status = model.OrderStatusWaitingForDriver
+				orderModel.StartTime = orderModel.ReserveTime // 使用预约时间作为开始时间
+
+				// 更新数据库中的订单
+				if err := database.DB.Save(&orderModel).Error; err != nil {
+					log.Error("更新预约订单状态失败", "error", err, "order_id", orderModel.ID)
+					continue
+				}
+
+				// 更新Redis中的订单状态
+				// 先从预约状态集合中移除
+				if err := order.RemoveOrderFromRedis(orderModel.ID, model.OrderStatusReserved); err != nil {
+					log.Error("从Redis移除预约订单失败", "error", err, "order_id", orderModel.ID)
+				}
+
+				// 添加到等待司机接单状态集合
+				if err := order.AddOrderToRedisStatusSet(&orderModel); err != nil {
+					log.Error("添加预约订单到等待司机接单集合失败", "error", err, "order_id", orderModel.ID)
+				}
+
+				processedOrders = append(processedOrders, orderModel.ID)
+			}
+		}
+	}
+
+	// 返回成功响应
+	response.Success(c, gin.H{"processed_orders": processedOrders})
 }

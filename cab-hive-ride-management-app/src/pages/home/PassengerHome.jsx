@@ -2,7 +2,7 @@ import Taro, { useDidHide, useDidShow } from "@tarojs/taro";
 import { useRef, useState } from "react";
 import { View } from "@tarojs/components";
 import { getUnfinishedOrder } from "../../services/order";
-import RideOrderPage from "./RideOrderPage";
+import RideOrderPage from "../../components/RideOrder";
 import "./index.scss";
 
 const PassengerHome = () => {
