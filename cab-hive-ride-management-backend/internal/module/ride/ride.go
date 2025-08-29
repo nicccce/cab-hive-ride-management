@@ -185,6 +185,17 @@ func TakeOrder(c *gin.Context) {
 		return
 	}
 
+	// 查找并验证车辆
+	var vehicle model.Vehicle
+	if err := database.DB.Where("id = ? AND driver_id = ? AND status = ?", req.VehicleID, payload.OpenID, "approved").First(&vehicle).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Fail(c, response.ErrNotFound.WithTips("车辆不存在或不属于该司机或未审核通过"))
+		} else {
+			response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		}
+		return
+	}
+
 	// 查找订单
 	var orderModel model.Order
 	if err := database.DB.Where("id = ? AND status = ?", req.OrderID, model.OrderStatusWaitingForDriver).First(&orderModel).Error; err != nil {
@@ -195,6 +206,11 @@ func TakeOrder(c *gin.Context) {
 		}
 		return
 	}
+
+	// 更新订单状态、司机信息和车辆ID
+	orderModel.DriverOpenID = payload.OpenID
+	orderModel.VehicleID = req.VehicleID
+	orderModel.Status = model.OrderStatusWaitingForPickup
 
 	// 更新订单状态和司机信息
 	orderModel.DriverOpenID = payload.OpenID
