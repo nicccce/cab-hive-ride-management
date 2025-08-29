@@ -10,12 +10,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
+	"math"
 )
 
 // RequestOrderResponse 定义请求订单的响应结构
@@ -63,13 +61,10 @@ func RequestOrder(c *gin.Context) {
 	}
 
 	// 检查司机是否有未完成的订单
-	var unfinishedOrder model.Order
-	err := database.DB.Where("driver_open_id = ? AND status NOT IN (?, ?)",
-		payload.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
-		First(&unfinishedOrder).Error
+	unfinishedOrder, err := getDriverActiveOrder(payload.OpenID)
 
 	// 如果找到了未完成的订单，拒绝请求新订单
-	if err == nil {
+	if unfinishedOrder != nil {
 		response.Fail(c, response.ErrInvalidRequest.WithTips("司机有未完成的订单，无法请求新订单"))
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -145,7 +140,8 @@ func RequestOrder(c *gin.Context) {
 
 // TakeOrderRequest 定义接单请求的结构体
 type TakeOrderRequest struct {
-	OrderID uint `json:"order_id" binding:"required"`
+	OrderID   uint `json:"order_id" binding:"required"`
+	VehicleID uint `json:"vehicle_id" binding:"required"`
 }
 
 // TakeOrder 处理司机接单的请求
@@ -170,14 +166,11 @@ func TakeOrder(c *gin.Context) {
 	}
 
 	// 检查司机是否有未完成的订单
-	var unfinishedOrder model.Order
-	err := database.DB.Where("driver_open_id = ? AND status NOT IN (?, ?)",
-		payload.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
-		First(&unfinishedOrder).Error
+	unfinishedOrder, err := getDriverActiveOrder(payload.OpenID)
 
-	// 如果找到了未完成的订单，拒绝接单
-	if err == nil {
-		response.Fail(c, response.ErrInvalidRequest.WithTips("司机有未完成的订单，无法接单"))
+	// 如果找到了未完成的订单，拒绝请求新订单
+	if unfinishedOrder != nil {
+		response.Fail(c, response.ErrInvalidRequest.WithTips("司机有未完成的订单，无法请求新订单"))
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		// 如果是其他数据库错误，返回错误响应
@@ -206,8 +199,6 @@ func TakeOrder(c *gin.Context) {
 	// 更新订单状态和司机信息
 	orderModel.DriverOpenID = payload.OpenID
 	orderModel.Status = model.OrderStatusWaitingForPickup
-	now := time.Now()
-	orderModel.StartTime = &now
 
 	// 保存订单到数据库
 	if err := database.DB.Save(&orderModel).Error; err != nil {
@@ -266,10 +257,10 @@ func matchNearestOrder(driverLocation *DriverLocation) (*model.Order, error) {
 			continue // 跳过无法解析的订单
 		}
 
-		// 计算司机与订单起点的距离
-		distance := calculateDistanceToOrder(
+		// 计算司机与订单路线点的最短距离
+		distance := calculateDistanceToRoutePoints(
 			driverLocation.Latitude, driverLocation.Longitude,
-			orderModel.StartLocation.Latitude, orderModel.StartLocation.Longitude)
+			orderModel.RoutePoints)
 
 		// 更新最近的订单
 		if distance < minDistance {
@@ -285,4 +276,3 @@ func matchNearestOrder(driverLocation *DriverLocation) (*model.Order, error) {
 
 	return nearestOrder, nil
 }
-

@@ -81,17 +81,17 @@ func UploadLocation(c *gin.Context) {
 		log.Error("查询司机进行中订单时出错", "error", err)
 		// 即使出错也继续执行，因为位置上传本身是成功的
 	} else if activeOrder != nil {
-		// 计算司机当前位置与订单起点的距离
-		distance := calculateDistanceToOrder(
+		// 计算司机当前位置与订单路线点的最短距离
+		distance := calculateDistanceToRoutePoints(
 			req.Latitude, req.Longitude,
-			activeOrder.StartLocation.Latitude, activeOrder.StartLocation.Longitude)
+			activeOrder.RoutePoints)
 
 		// 设置距离阈值（单位：公里）
 		const distanceThreshold = 50.0 // 50公里阈值
 
 		// 如果距离超过阈值，则报警
 		if distance > distanceThreshold {
-			log.Warn("警告：司机当前位置距离订单起点过远",
+			log.Warn("警告：司机当前位置距离订单路线过远",
 				"driver_open_id", payload.OpenID,
 				"distance", fmt.Sprintf("%.2f公里", distance),
 				"threshold", fmt.Sprintf("%.2f公里", distanceThreshold))
@@ -185,9 +185,9 @@ func getDriverActiveOrder(driverOpenID string) (*model.Order, error) {
 	return &order, nil
 }
 
-// calculateDistanceToOrder 计算两个经纬度点之间的距离（使用Haversine公式）
+// calculateDistance 计算两个经纬度点之间的距离（使用Haversine公式）
 // 返回距离（单位：公里）
-func calculateDistanceToOrder(lat1, lon1, lat2, lon2 float64) float64 {
+func calculateDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	const earthRadius = 6371.0 // 地球半径（单位：公里）
 
 	// 将角度转换为弧度
@@ -208,4 +208,26 @@ func calculateDistanceToOrder(lat1, lon1, lat2, lon2 float64) float64 {
 
 	distance := earthRadius * c
 	return distance
+}
+
+// calculateDistanceToRoutePoints 计算司机位置到订单路线点的最短距离
+// 返回距离（单位：公里）
+func calculateDistanceToRoutePoints(driverLat, driverLon float64, routePoints model.LocationPoints) float64 {
+	// 如果路线点为空，返回最大距离
+	if len(routePoints) == 0 {
+		return math.MaxFloat64
+	}
+
+	// 初始化最短距离为最大值
+	minDistance := math.MaxFloat64
+
+	// 遍历所有路线点，计算到每个点的距离，找出最短距离
+	for _, point := range routePoints {
+		distance := calculateDistance(driverLat, driverLon, point.Latitude, point.Longitude)
+		if distance < minDistance {
+			minDistance = distance
+		}
+	}
+
+	return minDistance
 }
