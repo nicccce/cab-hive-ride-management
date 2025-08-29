@@ -7,17 +7,21 @@ import (
 
 var log *slog.Logger
 
+// ModuleRide 乘车模块结构体
 type ModuleRide struct{}
 
-func (u *ModuleRide) GetName() string {
-	return "Ride"
+// GetName 获取模块名称
+func (m *ModuleRide) GetName() string {
+	return "ride"
 }
 
-func (u *ModuleRide) Init() {
-	log = logger.New("Ride")
+// Init 初始化乘车模块
+func (m *ModuleRide) Init() {
+	log = logger.New("ride")
 }
 
+// selfInit 自初始化函数
 func selfInit() {
-	u := &ModuleRide{}
-	u.Init()
+	m := &ModuleRide{}
+	m.Init()
 }

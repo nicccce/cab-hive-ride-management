@@ -1283,3 +1283,382 @@ components:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+ /rides/order/request:
+   get:
+     summary: Driver Request Order
+     description: Request an order for the driver based on their current location.
+     operationId: requestOrder
+     security:
+       - BearerAuth: []
+     responses:
+       '200':
+         description: Successful response
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+             example:
+               code: 200
+               msg: Success
+               data:
+                 id: 1
+                 user_open_id: openid_user1
+                 driver_open_id: ""
+                 vehicle_id: 0
+                 start_location:
+                   latitude: 36.68013
+                   longitude: 117.06533
+                   name: 当前位置
+                 end_location:
+                   name: 山东大学(中心校区)
+                   latitude: 36.675681
+                   longitude: 117.059985
+                   address: 山东省济南市历城区山大南路27号
+                   province: 山东省
+                   city: 济南市
+                   district: 历城区
+                 route_points:
+                   - latitude: 36.680143
+                     longitude: 117.06532
+                 start_time: "2025-07-16 10:30:00"
+                 end_time: null
+                 distance: 1.24
+                 duration: 5
+                 fare: 8
+                 tolls: 8
+                 status: waiting_for_driver
+                 payment_time: null
+                 comment: ""
+                 cancel_reason: ""
+                 rating: 0
+                 reserve_time: "2025-07-16 11:00:00"
+               timestamp: 2025-07-16T10:30:00Z
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+       '404':
+         description: No available orders
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+ /rides/order/take:
+   post:
+     summary: Driver Take Order
+     description: Take an order by the driver.
+     operationId: takeOrder
+     security:
+       - BearerAuth: []
+     requestBody:
+       required: true
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/TakeOrderRequest'
+     responses:
+       '200':
+         description: Order taken successfully
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+             example:
+               code: 200
+               msg: Success
+               data: null
+               timestamp: 2025-07-16T10:30:00Z
+       '400':
+         description: Invalid request parameters
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+       '404':
+         description: Order not found or invalid status
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+components:
+ schemas:
+   TakeOrderRequest:
+     type: object
+     properties:
+       order_id:
+         type: integer
+         description: Order ID
+         example: 1
+     required:
+       - order_id
+
+   UploadLocationRequest:
+     type: object
+     properties:
+       latitude:
+         type: number
+         format: float
+         description: Latitude coordinate
+         example: 36.680143
+       longitude:
+         type: number
+         format: float
+         description: Longitude coordinate
+         example: 117.06532
+     required:
+       - latitude
+       - longitude
+
+   StandardResponse:
+     type: object
+     properties:
+       code:
+         type: integer
+         description: Response code
+       msg:
+         type: string
+         description: Response message
+       data:
+         type: object
+         description: Response data
+       timestamp:
+         type: string
+         format: date-time
+         description: Response timestamp
+     required:
+       - code
+       - msg
+       - timestamp
+   
+   ErrorResponse:
+     type: object
+     properties:
+       code:
+         type: integer
+         description: Error code
+       msg:
+         type: string
+         description: Error message
+       timestamp:
+         type: string
+         format: date-time
+         description: Response timestamp
+     required:
+      - code
+      - msg
+      - timestamp
+   
+   DriverReview:
+     type: object
+     properties:
+       id:
+         type: integer
+       created_at:
+         type: string
+         format: date-time
+       updated_at:
+         type: string
+         format: date-time
+       open_id:
+         type: string
+       license_number:
+         type: string
+       name:
+         type: string
+       phone:
+         type: string
+       license_image_url:
+         type: string
+       status:
+         type: string
+       comment:
+         type: string
+       action_type:
+         type: string
+       driver_id:
+         type: integer
+
+securitySchemes:
+   BearerAuth:
+     type: http
+     scheme: bearer
+     bearerFormat: JWT
+
+ /rides/location:
+   post:
+     summary: Driver Upload Location
+     description: Upload current location coordinates for a driver.
+     operationId: uploadDriverLocation
+     security:
+       - BearerAuth: []
+     requestBody:
+       required: true
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/UploadLocationRequest'
+     responses:
+       '200':
+         description: Location uploaded successfully
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+             example:
+               code: 200
+               msg: Success
+               data: null
+               timestamp: 2025-07-16T10:30:00Z
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+ /rides/location/{driver_id}:
+   get:
+     summary: Get Driver Location
+     description: Get current location information for a driver.
+     operationId: getDriverLocation
+     security:
+       - BearerAuth: []
+     parameters:
+       - name: driver_id
+         in: path
+         required: true
+         schema:
+           type: string
+     responses:
+       '200':
+         description: Successful response
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/StandardResponse'
+             example:
+               code: 200
+               msg: Success
+               data:
+                 open_id: openid_driver1
+                 latitude: 36.680143
+                 longitude: 117.06532
+                 update_time: 1626456600
+               timestamp: 2025-07-16T10:30:00Z
+       '401':
+         description: Unauthorized
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+       '404':
+         description: Driver location not found
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+components:
+ schemas:
+   UploadLocationRequest:
+     type: object
+     properties:
+       latitude:
+         type: number
+         format: float
+         description: Latitude coordinate
+         example: 36.680143
+       longitude:
+         type: number
+         format: float
+         description: Longitude coordinate
+         example: 117.06532
+     required:
+       - latitude
+       - longitude
+
+   StandardResponse:
+     type: object
+     properties:
+       code:
+         type: integer
+         description: Response code
+       msg:
+         type: string
+         description: Response message
+       data:
+         type: object
+         description: Response data
+       timestamp:
+         type: string
+         format: date-time
+         description: Response timestamp
+     required:
+       - code
+       - msg
+       - timestamp
+   
+   ErrorResponse:
+     type: object
+     properties:
+       code:
+         type: integer
+         description: Error code
+       msg:
+         type: string
+         description: Error message
+       timestamp:
+         type: string
+         format: date-time
+         description: Response timestamp
+     required:
+      - code
+      - msg
+      - timestamp
+   
+   DriverReview:
+     type: object
+     properties:
+       id:
+         type: integer
+       created_at:
+         type: string
+         format: date-time
+       updated_at:
+         type: string
+         format: date-time
+       open_id:
+         type: string
+       license_number:
+         type: string
+       name:
+         type: string
+       phone:
+         type: string
+       license_image_url:
+         type: string
+       status:
+         type: string
+       comment:
+         type: string
+       action_type:
+         type: string
+       driver_id:
+         type: integer
+
+securitySchemes:
+   BearerAuth:
+     type: http
+     scheme: bearer
+     bearerFormat: JWT

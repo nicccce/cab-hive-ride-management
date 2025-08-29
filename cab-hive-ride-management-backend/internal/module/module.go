@@ -8,6 +8,7 @@ import (
 	"cab-hive/internal/module/image"
 	"cab-hive/internal/module/order"
 	"cab-hive/internal/module/ping"
+	"cab-hive/internal/module/ride"
 	"cab-hive/internal/module/user"
 	"cab-hive/internal/module/vehicle"
 	"github.com/gin-gonic/gin"
@@ -37,5 +38,6 @@ func init() {
 		&vehicle.ModuleVehicle{},
 		&order.ModuleOrder{},
 		&alipay.ModuleAlipay{},
+		&ride.ModuleRide{},
 	})
 }
