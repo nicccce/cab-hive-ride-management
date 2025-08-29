@@ -83,7 +83,7 @@ const PassengerHome = () => {
       ) : (
         (() => {
           console.log(
-            `啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊宝宝你是个${unfinishedOrder.status}`
+            `啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊宝宝你是个${unfinishedOrder}`
           );
           switch (unfinishedOrder.status) {
             case OrderStatus.WaitingForDriver:

@@ -1,4 +1,4 @@
-package module
+ package module
 
 import (
 	"cab-hive/internal/module/admin"

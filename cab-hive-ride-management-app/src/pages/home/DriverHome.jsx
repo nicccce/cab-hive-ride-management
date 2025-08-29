@@ -206,7 +206,9 @@ const DriverHome = () => {
   const selectVehicle = (vehicle) => {
     if (vehicle.status === "approved") {
       setSelectedVehicle(vehicle);
+      console.log("选择的车辆信息:", vehicle);
       setIsWorking(true);
+      console.log("isWorking", isWorking);
 
       Taro.showToast({
         title: "开始接单",
@@ -231,6 +233,11 @@ const DriverHome = () => {
     });
   };
 
+  useEffect(() => {
+    startBackgroundTasks();
+    startOrderPolling();
+  }, [isWorking]);
+
   return (
     <View className="container">
       <>
@@ -249,7 +256,7 @@ const DriverHome = () => {
         ) : (
           (() => {
             console.log(
-              `啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊宝宝你是个${unfinishedOrder.status}`
+              `啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊宝宝你是个${unfinishedOrder}`
             );
             switch (unfinishedOrder.status) {
               case OrderStatus.WaitingForPickup:
