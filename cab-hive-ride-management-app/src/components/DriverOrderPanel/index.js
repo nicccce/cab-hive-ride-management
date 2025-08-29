@@ -1,64 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, Button, Map } from '@tarojs/components'
-import Taro, { useDidShow, useDidHide } from '@tarojs/taro'
-import { requestOrder, takeOrder } from '../../services/order'
+import Taro from '@tarojs/taro'
+import { takeOrder } from '../../services/order'
 import './index.scss'
 
-const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleSelect, onStartWork, onStopWork, isWorking, selectedVehicle, fetchVehicles }) => {
+const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleSelect, onStartWork, onStopWork, isWorking, selectedVehicle, fetchVehicles, availableOrder }) => {
   const [showVehicleModal, setShowVehicleModal] = useState(false)
   const [vehicles, setVehicles] = useState(initialVehicles)
-  const [currentOrder, setCurrentOrder] = useState(null)
-
-    // 定时器引用
-    const loopRef = useRef(null);
-  
-    // 开始定时
-    const startLoop = () => {
-      // 先清除已存在的定时器
-      if (loopRef.current) {
-        clearInterval(loopRef.current);
-      }
-  
-      // 设置新的定时器，每2秒执行一次
-      loopRef.current = setInterval(async () => {
-        // 如果司机处于工作状态，请求订单
-        if (isWorking && selectedVehicle) {
-          try {
-            const response = await requestOrder();
-            if (response.code === 200 && response.data) {
-              setCurrentOrder(response.data);
-            } else {
-              // 如果没有订单，清空当前订单
-              setCurrentOrder(null);
-            }
-          } catch (error) {
-            console.error('请求订单失败:', error);
-            // 请求失败时也清空当前订单
-            setCurrentOrder(null);
-          }
-        }
-      }, 2000);
-    };
-  
-    // 停止定时
-    const stopLoop = () => {
-      if (loopRef.current) {
-        clearInterval(loopRef.current);
-        loopRef.current = null;
-      }
-    };
-  
-    // 页面显示时获取选点结果并恢复定时
-    useDidShow(() => {
-      // 恢复定时
-      startLoop();
-    });
-  
-    // 页面隐藏时清理插件数据并停止位置跟踪
-    useDidHide(() => {
-      // 停止位置跟踪
-      stopLoop();
-    });
 
   // 地图初始配置
   const [mapConfig, setMapConfig] = useState({
@@ -116,11 +64,11 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
 
   // 处理接单
   const handleTakeOrder = async () => {
-    if (!currentOrder || !selectedVehicle) return;
+    if (!availableOrder || !selectedVehicle) return;
     
     try {
       const response = await takeOrder({
-        order_id: currentOrder.id,
+        order_id: availableOrder.id,
         vehicle_id: selectedVehicle.id
       });
       
@@ -129,9 +77,6 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
           title: '接单成功',
           icon: 'success'
         });
-        // 接单成功后清空当前订单
-        setCurrentOrder(null);
-        // 可以在这里添加其他接单成功的处理逻辑
       } else {
         Taro.showToast({
           title: '接单失败',
@@ -141,7 +86,7 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
     } catch (error) {
       console.error('接单失败:', error);
       Taro.showToast({
-        title: '接单失败',
+        title: '接单失败,请稍后重试',
         icon: 'none'
       });
     }
@@ -207,7 +152,7 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
   
   // 渲染订单信息
   const renderOrderInfo = () => {
-    if (!currentOrder) return null;
+    if (!availableOrder) return null;
     
     return (
       <View className="order-info-section">
@@ -218,19 +163,19 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
         <View className="order-details">
           <View className="order-detail-row">
             <Text className="order-detail-label">起点:</Text>
-            <Text className="order-detail-value">{currentOrder.start_location?.name || '未知地点'}</Text>
+            <Text className="order-detail-value">{availableOrder.start_location?.name || '未知地点'}</Text>
           </View>
           <View className="order-detail-row">
             <Text className="order-detail-label">终点:</Text>
-            <Text className="order-detail-value">{currentOrder.end_location?.name || '未知地点'}</Text>
+            <Text className="order-detail-value">{availableOrder.end_location?.name || '未知地点'}</Text>
           </View>
           <View className="order-detail-row">
             <Text className="order-detail-label">距离:</Text>
-            <Text className="order-detail-value">{currentOrder.distance ? (currentOrder.distance / 1000).toFixed(1) + '公里' : '未知'}</Text>
+            <Text className="order-detail-value">{availableOrder.distance ? (availableOrder.distance / 1000).toFixed(1) + '公里' : '未知'}</Text>
           </View>
           <View className="order-detail-row">
             <Text className="order-detail-label">预估费用:</Text>
-            <Text className="order-detail-value">{currentOrder.fare ? currentOrder.fare + '元' : '未知'}</Text>
+            <Text className="order-detail-value">{availableOrder.fare ? availableOrder.fare + '元' : '未知'}</Text>
           </View>
         </View>
         

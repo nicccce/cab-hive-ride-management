@@ -38,6 +38,9 @@ export const API_ENDPOINTS = {
   // 司机订单相关
   ORDER_REQUEST: '/api/rides/order/request',
   ORDER_TAKE: '/api/rides/order/take',
+  
+  // 司机位置相关
+  DRIVER_LOCATION: '/api/rides/location',
 }
 
 // 角色定义

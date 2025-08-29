@@ -342,3 +342,35 @@ export const formatDuration = (seconds) => {
   }
   return `${minutes}分钟`;
 };
+
+/**
+ * 上传司机位置
+ * @param {Object} location 位置信息 {latitude, longitude}
+ * @returns {Promise<Object>} 请求结果
+ */
+export const uploadDriverLocation = async (location) => {
+  const { latitude, longitude } = location;
+  
+  if (!latitude || !longitude) {
+    throw new Error('位置信息不完整');
+  }
+  
+  try {
+    const request = (await import('../utils/request')).default;
+    const { API_ENDPOINTS } = await import('../config/api');
+    
+    const result = await request({
+      url: API_ENDPOINTS.DRIVER_LOCATION,
+      method: 'POST',
+      data: {
+        latitude,
+        longitude
+      }
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('上传司机位置失败:', error);
+    throw error;
+  }
+};
