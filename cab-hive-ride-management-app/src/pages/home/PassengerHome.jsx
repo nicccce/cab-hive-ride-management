@@ -1,8 +1,9 @@
 import Taro, { useDidHide, useDidShow } from "@tarojs/taro";
 import { useRef, useState } from "react";
 import { View } from "@tarojs/components";
-import { getUnfinishedOrder } from "../../services/order";
+import { getUnfinishedOrder, OrderStatus } from "../../services/order";
 import RideOrderPage from "../../components/RideOrder";
+import WaitingForDriver from "../../components/WaitingForDriver";
 import "./index.scss";
 
 const PassengerHome = () => {
@@ -74,7 +75,31 @@ const PassengerHome = () => {
       {!unfinishedOrder ? (
         <RideOrderPage />
       ) : (
-        <View>未完成订单: {JSON.stringify(unfinishedOrder)}</View>
+        (() => {
+          console.log(
+            `啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊宝宝你是个${unfinishedOrder.status}`
+          );
+          switch (unfinishedOrder.status) {
+            case OrderStatus.WaitingForDriver:
+              return (
+                <WaitingForDriver
+                  orderInfo={unfinishedOrder}
+                  onOrderCancelled={() => setUnfinishedOrder(null)}
+                />
+              );
+            case OrderStatus.WaitingForPickup:
+              return <View>等待司机到达起点</View>;
+            case OrderStatus.DriverArrived:
+              return <View>司机已到达，等待上车</View>;
+            case OrderStatus.InProgress:
+              return <View>行程进行中</View>;
+            case OrderStatus.WaitingForPayment:
+              // 这个状态已经在定时器中处理了跳转，这里可以显示一个简单的信息
+              return <View>等待支付响应</View>;
+            default:
+              return <View>未知订单状态: {unfinishedOrder.status}</View>;
+          }
+        })()
       )}
     </>
   );

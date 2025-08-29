@@ -39,4 +39,8 @@ func (m *ModuleOrder) InitRouter(router *gin.RouterGroup) {
 	// 获取所有订单（管理员接口，支持分页和条件查询）
 	// 需要管理员认证
 	router.GET("/orders/admin", middleware.Auth(3), GetAllOrders)
+
+	// 取消订单
+	// 需要用户认证
+	router.DELETE("/orders/:id", middleware.Auth(1), CancelOrder)
 }

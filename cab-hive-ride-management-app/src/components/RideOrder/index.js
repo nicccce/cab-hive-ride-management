@@ -6,6 +6,7 @@ import {
   navigateToLocationPlugin,
   planDrivingRoute,
 } from "../../services/location";
+import { createImmediateOrder, createReserveOrder } from "../../services/order";
 import "./index.scss";
 
 const RideOrderPage = () => {
@@ -442,10 +443,117 @@ const RideOrderPage = () => {
     }
   }, [startLocation, endLocation, updateStartLocation, updateEndLocation]);
 
-  const handleNowDepart = () => {
-    console.log(JSON.stringify({...availableRoutes[selectedRouteIndex],startLocation:startLocation,endLocation:endLocation}));
+  const handleNowDepart = async () => {
+    try {
+      // 检查必要的参数
+      if (!startLocation || !endLocation || availableRoutes.length === 0) {
+        Dialog.alert({
+          title: "信息不完整",
+          message: "请先选择起点和终点并等待路线规划完成"
+        });
+        return;
+      }
+
+      // 构造订单参数
+      const orderParams = {
+        points: availableRoutes[selectedRouteIndex].points,
+        distance: availableRoutes[selectedRouteIndex].distance,
+        duration: availableRoutes[selectedRouteIndex].duration,
+        tolls: availableRoutes[selectedRouteIndex].tolls,
+        tags: [],
+        steps: availableRoutes[selectedRouteIndex].steps,
+        startLocation: startLocation,
+        endLocation: endLocation
+      };
+
+      console.log("创建立即出发订单，参数：", orderParams);
+
+      // 调用创建立即出发订单接口
+      const result = await createImmediateOrder(orderParams);
+      console.log("立即出发订单创建结果：", result);
+
+      if (result.code === 200) {
+        Taro.showToast({
+          title: "订单创建成功",
+          icon: "success"
+        });
+        
+        
+      } else {
+        Taro.showToast({
+          title: result.msg || "订单创建失败",
+          icon: "none"
+        });
+      }
+    } catch (error) {
+      console.error("创建立即出发订单失败：", error);
+      Taro.showToast({
+        title: "订单创建失败，请重试",
+        icon: "none"
+      });
+    }
   };
-  const handleReserveDepart = () => {};
+
+  const handleReserveDepart = async () => {
+    try {
+      // 检查必要的参数
+      if (!startLocation || !endLocation || availableRoutes.length === 0) {
+        Dialog.alert({
+          title: "信息不完整",
+          message: "请先选择起点和终点并等待路线规划完成"
+        });
+        return;
+      }
+
+      // 这里应该弹出时间选择器让用户选择预约时间
+      // 为了简化，我们使用当前时间加1小时作为示例
+      const now = new Date();
+      const reserveTime = new Date(now.getTime() + 60 * 60 * 1000); // 1小时后
+      const reserveTimeString = reserveTime.toISOString().slice(0, 19).replace('T', ' ');
+
+      // 构造预约订单参数
+      const orderParams = {
+        points: availableRoutes[selectedRouteIndex].points,
+        distance: availableRoutes[selectedRouteIndex].distance,
+        duration: availableRoutes[selectedRouteIndex].duration,
+        tolls: availableRoutes[selectedRouteIndex].tolls,
+        tags: [],
+        steps: availableRoutes[selectedRouteIndex].steps,
+        startLocation: startLocation,
+        endLocation: endLocation,
+        reserveTime: reserveTimeString
+      };
+
+      console.log("创建预约订单，参数：", orderParams);
+
+      // 调用创建预约订单接口
+      const result = await createReserveOrder(orderParams);
+      console.log("预约订单创建结果：", result);
+
+      if (result.code === 200) {
+        Taro.showToast({
+          title: "预约订单创建成功",
+          icon: "success"
+        });
+        
+        // 跳转到订单页面
+        Taro.navigateTo({
+          url: `/pages/booking/index?id=${result.data.order_id}`
+        });
+      } else {
+        Taro.showToast({
+          title: result.msg || "预约订单创建失败",
+          icon: "none"
+        });
+      }
+    } catch (error) {
+      console.error("创建预约订单失败：", error);
+      Taro.showToast({
+        title: "预约订单创建失败，请重试",
+        icon: "none"
+      });
+    }
+  };
 
   return (
     <View className="container">

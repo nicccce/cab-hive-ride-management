@@ -75,25 +75,25 @@ type CreateImmediateOrderResponse struct {
 
 // OrderResponse 定义订单信息响应的结构体
 type OrderResponse struct {
-	ID            uint                  `json:"id"`
-	UserOpenID    string                `json:"user_open_id"`
-	DriverOpenID  string                `json:"driver_open_id"`
-	VehicleID     uint                  `json:"vehicle_id"`
-	StartLocation model.Location        `json:"start_location"`
-	EndLocation   model.Location        `json:"end_location"`
+	ID            uint                 `json:"id"`
+	UserOpenID    string               `json:"user_open_id"`
+	DriverOpenID  string               `json:"driver_open_id"`
+	VehicleID     uint                 `json:"vehicle_id"`
+	StartLocation model.Location       `json:"start_location"`
+	EndLocation   model.Location       `json:"end_location"`
 	RoutePoints   model.LocationPoints `json:"route_points"`
-	StartTime     *string               `json:"start_time"`
-	EndTime       *string               `json:"end_time"`
-	Distance      float64               `json:"distance"`
-	Duration      int                   `json:"duration"`
-	Fare          float64               `json:"fare"`
-	Tolls         float64               `json:"tolls"`
-	Status        string                `json:"status"`
-	PaymentTime   *string               `json:"payment_time"`
-	Comment       string                `json:"comment"`
-	CancelReason  string                `json:"cancel_reason"`
-	Rating        int                   `json:"rating"`
-	ReserveTime   *string               `json:"reserve_time"` // 预约时间
+	StartTime     *string              `json:"start_time"`
+	EndTime       *string              `json:"end_time"`
+	Distance      float64              `json:"distance"`
+	Duration      int                  `json:"duration"`
+	Fare          float64              `json:"fare"`
+	Tolls         float64              `json:"tolls"`
+	Status        string               `json:"status"`
+	PaymentTime   *string              `json:"payment_time"`
+	Comment       string               `json:"comment"`
+	CancelReason  string               `json:"cancel_reason"`
+	Rating        int                  `json:"rating"`
+	ReserveTime   *string              `json:"reserve_time"` // 预约时间
 }
 
 // OrderListResponse 定义订单列表响应的结构体
@@ -104,10 +104,10 @@ type OrderListResponse struct {
 
 // Pagination 定义分页信息的结构体
 type Pagination struct {
-	CurrentPage int `json:"current_page"`
-	PageSize    int `json:"page_size"`
+	CurrentPage int   `json:"current_page"`
+	PageSize    int   `json:"page_size"`
 	TotalCount  int64 `json:"total_count"`
-	TotalPages  int `json:"total_pages"`
+	TotalPages  int   `json:"total_pages"`
 }
 
 // CreateImmediateOrder 处理前端传来的立即出发订单内容
@@ -481,8 +481,11 @@ func GetDriverUnfinishedOrder(c *gin.Context) {
 	// 查询司机未完成的订单
 	// 未完成订单指的是状态不是"completed"也不是"cancelled"的订单
 	var order model.Order
-	err := database.DB.Where("driver_open_id = ? AND status NOT IN (?, ?)",
-		claims.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
+	err := database.DB.Where("driver_open_id = ? AND status IN (?, ?, ?)",
+		claims.OpenID,
+		model.OrderStatusWaitingForPickup,
+		model.OrderStatusDriverArrived,
+		model.OrderStatusInProgress).
 		First(&order).Error
 
 	// 如果没有找到未完成的订单，返回空
@@ -549,6 +552,85 @@ func GetDriverUnfinishedOrder(c *gin.Context) {
 	response.Success(c, orderResp)
 }
 
+// CancelOrder 处理取消订单请求
+func CancelOrder(c *gin.Context) {
+	// 获取订单ID
+	orderID := c.Param("id")
+	if orderID == "" {
+		log.Error("订单ID参数不能为空")
+		response.Fail(c, response.ErrInvalidRequest)
+		return
+	}
+
+	// 从ID中提取数字部分
+	var orderIDNum uint
+	fmt.Sscanf(orderID, "%d", &orderIDNum)
+
+	// 从上下文中获取用户信息
+	payload, exists := c.Get("payload")
+	if !exists {
+		log.Error("无法获取用户信息")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 断言 payload 为 jwt.Claims 类型
+	claims, ok := payload.(*jwt.Claims)
+	if !ok {
+		log.Error("用户信息类型错误")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 查找订单
+	var order model.Order
+	if err := database.DB.Where("id = ?", orderIDNum).First(&order).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Error("订单记录不存在", "id", orderIDNum)
+			response.Fail(c, response.ErrNotFound)
+		} else {
+			log.Error("数据库查询失败", "error", err)
+			response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		}
+		return
+	}
+
+	// 验证订单是否属于当前用户
+	if order.UserOpenID != claims.OpenID {
+		log.Error("订单不属于当前用户", "order_user_open_id", order.UserOpenID, "user_open_id", claims.OpenID)
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 验证订单状态是否为等待司机接单
+	if order.Status != model.OrderStatusWaitingForDriver {
+		log.Error("订单状态不是等待司机接单，无法取消", "order_status", order.Status)
+		response.Fail(c, response.ErrInvalidRequest.WithTips("订单状态不是等待司机接单，无法取消"))
+		return
+	}
+
+	// 更新订单状态为已取消
+	now := time.Now()
+	order.Status = model.OrderStatusCancelled
+	order.CancelReason = "用户取消"
+	order.EndTime = &now
+
+	if err := database.DB.Save(&order).Error; err != nil {
+		log.Error("更新订单状态失败", "error", err)
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 从Redis中移除订单
+	if err := RemoveOrderFromRedis(order.ID, model.OrderStatusWaitingForDriver); err != nil {
+		log.Error("从Redis移除订单失败", "error", err, "order_id", order.ID)
+		// 注意：这里不返回错误，因为订单已经成功更新到数据库
+	}
+
+	// 返回成功响应
+	log.Info("取消订单成功", "order_id", order.ID)
+	response.Success(c, nil)
+}
 // GetUserOrders 处理查询用户所有订单请求（支持分页和条件查询）
 func GetUserOrders(c *gin.Context) {
 	// 从上下文中获取用户信息

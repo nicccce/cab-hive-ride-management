@@ -29,9 +29,11 @@ export const API_ENDPOINTS = {
   
   // 订单相关
   ORDER_CREATE: '/api/orders/immediate',
+  ORDER_RESERVE: '/api/orders/reserve',
   ORDER_DETAIL: '/api/orders',
   ORDER_UNFINISHED: '/api/orders/unfinished',
   ORDER_DRIVER_UNFINISHED: '/api/orders/driver/unfinished',
+  ORDER_CANCEL: '/api/orders/{id}/cancel',
 }
 
 // 角色定义
