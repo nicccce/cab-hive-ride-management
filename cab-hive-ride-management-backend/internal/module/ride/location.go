@@ -1,15 +1,21 @@
 package ride
 
 import (
+	"cab-hive/internal/global/database"
 	"cab-hive/internal/global/jwt"
 	"cab-hive/internal/global/redis"
 	"cab-hive/internal/global/response"
+	"cab-hive/internal/model"
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"math"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
+	"gorm.io/gorm"
 )
 
 // DriverLocation 定义司机位置信息结构体
@@ -68,6 +74,27 @@ func UploadLocation(c *gin.Context) {
 	if err != nil {
 		response.Fail(c, response.ErrServerInternal.WithOrigin(err))
 		return
+	}
+
+	// 检查司机是否有进行中的订单
+	activeOrder, err := getDriverActiveOrder(payload.OpenID)
+	if err != nil {
+		log.Printf("查询司机进行中订单时出错: %v", err)
+		// 即使出错也继续执行，因为位置上传本身是成功的
+	} else if activeOrder != nil {
+		// 计算司机当前位置与订单起点的距离
+		distance := calculateDistance(
+			req.Latitude, req.Longitude,
+			activeOrder.StartLocation.Latitude, activeOrder.StartLocation.Longitude)
+
+		// 设置距离阈值（单位：公里）
+		const distanceThreshold = 50.0 // 50公里阈值
+
+		// 如果距离超过阈值，则报警
+		if distance > distanceThreshold {
+			log.Printf("警告：司机 %s 当前位置距离订单起点过远，距离为 %.2f 公里，超过阈值 %.2f 公里", 
+				payload.OpenID, distance, distanceThreshold)
+		}
 	}
 
 	// 返回成功响应
@@ -131,4 +158,53 @@ func getDriverLocation(driverID string) (*DriverLocation, error) {
 	}
 
 	return &location, nil
+}
+
+// getDriverActiveOrder 检查司机是否有进行中的订单
+func getDriverActiveOrder(driverOpenID string) (*model.Order, error) {
+	// 查询司机是否有进行中的订单
+	// 进行中的订单状态包括: waiting_for_pickup, driver_arrived, in_progress
+	var order model.Order
+	err := database.DB.Where("driver_open_id = ? AND status IN (?, ?, ?)",
+		driverOpenID, 
+		model.OrderStatusWaitingForPickup, 
+		model.OrderStatusDriverArrived, 
+		model.OrderStatusInProgress).
+		First(&order).Error
+	
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// 没有找到进行中的订单
+			return nil, nil
+		}
+		// 其他数据库错误
+		return nil, err
+	}
+	
+	return &order, nil
+}
+
+// calculateDistance 计算两个经纬度点之间的距离（使用Haversine公式）
+// 返回距离（单位：公里）
+func calculateDistance(lat1, lon1, lat2, lon2 float64) float64 {
+	const earthRadius = 6371.0 // 地球半径（单位：公里）
+	
+	// 将角度转换为弧度
+	lat1Rad := lat1 * math.Pi / 180
+	lon1Rad := lon1 * math.Pi / 180
+	lat2Rad := lat2 * math.Pi / 180
+	lon2Rad := lon2 * math.Pi / 180
+	
+	// 计算差值
+	deltaLat := lat2Rad - lat1Rad
+	deltaLon := lon2Rad - lon1Rad
+	
+	// Haversine公式
+	a := math.Sin(deltaLat/2)*math.Sin(deltaLat/2) +
+		math.Cos(lat1Rad)*math.Cos(lat2Rad)*
+		math.Sin(deltaLon/2)*math.Sin(deltaLon/2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	
+	distance := earthRadius * c
+	return distance
 }
