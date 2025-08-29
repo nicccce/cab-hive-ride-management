@@ -59,6 +59,6 @@ export const getDriverUnfinishedOrder = async () => {
 export const cancelOrder = async (orderId) => {
   return await request({
     url: API_ENDPOINTS.ORDER_CANCEL.replace('{id}', orderId),
-    method: 'POST'
+    method: 'DELETE'
   })
 }

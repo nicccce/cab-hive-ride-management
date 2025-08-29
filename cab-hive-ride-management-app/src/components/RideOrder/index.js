@@ -320,13 +320,35 @@ const RideOrderPage = () => {
       }
 
       // 4. 在地图上显示所有路线（不同颜色）
-      const polylines = top3Routes.map((route, index) => ({
-        points: route.points,
-        color: getRouteColor(index),
-        width: index === 0 ? 8 : 6, // 推荐路线更粗
-        dottedLine: index > 0,
-        arrowLine: true, // 显示方向箭头
-      }));
+      const polylines = top3Routes.map((route, index) => {
+        // 验证路线点数据
+        if (!route.points || !Array.isArray(route.points) || route.points.length === 0) {
+          console.warn("无效的路线点数据:", route);
+          return null;
+        }
+        
+        // 过滤有效的坐标点
+        const validPoints = route.points.filter(point =>
+          point &&
+          typeof point.latitude === 'number' &&
+          typeof point.longitude === 'number' &&
+          !isNaN(point.latitude) &&
+          !isNaN(point.longitude)
+        );
+        
+        if (validPoints.length === 0) {
+          console.warn("路线点数据中没有有效的坐标:", route.points);
+          return null;
+        }
+        
+        return {
+          points: validPoints,
+          color: getRouteColor(index),
+          width: index === 0 ? 8 : 6, // 推荐路线更粗
+          dottedLine: index > 0,
+          arrowLine: true, // 显示方向箭头
+        };
+      }).filter(polyline => polyline !== null); // 过滤掉无效的polyline
 
       console.log("地图上的路线数据：", polylines);
 
@@ -600,8 +622,6 @@ const RideOrderPage = () => {
               )}
             </View>
 
-            {/* 分割线 */}
-            <View className="divider-line"></View>
 
             {/* 终点选择行 */}
             <View className="location-row end-row" onClick={handleChooseEnd}>
@@ -637,7 +657,7 @@ const RideOrderPage = () => {
                   {availableRoutes.map((route, index) => (
                     <View
                       key={index}
-                      className={`route-tab ${selectedRouteIndex === index ? 'selected' : ''}`}
+                      className={`route-tab${selectedRouteIndex===index?".selected":""}`}
                       onClick={() => setSelectedRouteIndex(index)}
                     >
                       <View className="route-info">

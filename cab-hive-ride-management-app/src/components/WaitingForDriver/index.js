@@ -25,13 +25,6 @@ const WaitingForDriver = ({ orderInfo, onOrderCancelled }) => {
   // 路径规划线
   const [polyline, setPolyline] = useState([]);
 
-  // 格式化距离
-  const formatDistance = (meters) => {
-    if (!meters || Number.isNaN(meters)) return "未知距离";
-    if (meters < 1000) return `${Math.round(meters)}米`;
-    return `${(meters / 1000).toFixed(1)}公里`;
-  };
-
   // 格式化时间
   const formatDuration = (minutes) => {
     if (!minutes || Number.isNaN(minutes)) return "未知时间";
@@ -92,42 +85,53 @@ const WaitingForDriver = ({ orderInfo, onOrderCancelled }) => {
 
     // 设置路线
     if (orderInfo.route_points && orderInfo.route_points.length > 0) {
-      const routePolyline = {
-        points: orderInfo.route_points,
-        color: "#FF0000",
-        width: 6,
-        dottedLine: false,
-        arrowLine: true,
-      };
-      setPolyline([routePolyline]);
+      // 过滤有效的坐标点
+      const validPoints = orderInfo.route_points.filter(point =>
+        point &&
+        typeof point.latitude === 'number' &&
+        typeof point.longitude === 'number' &&
+        !Number.isNaN(point.latitude) &&
+        !Number.isNaN(point.longitude)
+      );
       
-      // 调整地图视野以适应路线
-      // 计算路线边界
-      const latitudes = orderInfo.route_points.map(p => p.latitude);
-      const longitudes = orderInfo.route_points.map(p => p.longitude);
-      const minLat = Math.min(...latitudes);
-      const maxLat = Math.max(...latitudes);
-      const minLng = Math.min(...longitudes);
-      const maxLng = Math.max(...longitudes);
-      
-      // 设置地图中心点和缩放级别
-      setMapConfig(prev => ({
-        ...prev,
-        longitude: (minLng + maxLng) / 2,
-        latitude: (minLat + maxLat) / 2,
-        scale: 14
-      }));
+      if (validPoints.length > 0) {
+        const routePolyline = {
+          points: validPoints,
+          color: "#FF0000",
+          width: 6,
+          dottedLine: false,
+          arrowLine: true,
+        };
+        setPolyline([routePolyline]);
+        
+        // 调整地图视野以适应路线
+        // 计算路线边界
+        const latitudes = validPoints.map(p => p.latitude);
+        const longitudes = validPoints.map(p => p.longitude);
+        const minLat = Math.min(...latitudes);
+        const maxLat = Math.max(...latitudes);
+        const minLng = Math.min(...longitudes);
+        const maxLng = Math.max(...longitudes);
+        
+        // 设置地图中心点和缩放级别
+        setMapConfig(prev => ({
+          ...prev,
+          longitude: (minLng + maxLng) / 2,
+          latitude: (minLat + maxLat) / 2,
+          scale: 14
+        }));
+      }
     }
   }, [orderInfo]);
 
   // 处理取消订单
   const handleCancelOrder = async () => {
     try {
+      // 使用 Dialog.alert 来显示确认对话框，并通过 onConfirm 和 onCancel 回调处理用户选择
       Dialog.confirm({
         title: "确认取消订单",
         message: "您确定要取消这个订单吗？",
-      })
-        .then(async () => {
+        onConfirm: async () => {
           // 用户点击确认
           const result = await cancelOrder(orderInfo.id);
           if (result.success) {
@@ -145,10 +149,11 @@ const WaitingForDriver = ({ orderInfo, onOrderCancelled }) => {
               icon: "none",
             });
           }
-        })
-        .catch(() => {
+        },
+        onCancel: () => {
           // 用户点击取消，不执行任何操作
-        });
+        }
+      });
     } catch (error) {
       console.error("取消订单失败：", error);
       Taro.showToast({
@@ -187,13 +192,21 @@ const WaitingForDriver = ({ orderInfo, onOrderCancelled }) => {
           onUpdated={() => console.log("地图更新完成")}
         />
         <View className="ride-info-container">
-          {/* 等待司机接单提示 */}
-          <View className="waiting-info">
-            <Text className="waiting-text">正在等待司机接单...</Text>
-          </View>
+          <View className="order-info-container">
+            {/* 等待司机接单提示 */}
+            <View className="waiting-info">
+              <Text className="waiting-text">正在等待司机接单...</Text>
+            </View>
 
-          {/* 合并显示起点、终点和路线信息 */}
-          <View className="combined-info-container">
+            {/* 取消订单按钮 */}
+            <Button
+              className="cancel-order-button"
+              color="danger"
+              onClick={handleCancelOrder}
+            >
+              取消订单
+            </Button>
+
             {/* 起点和终点信息 */}
             <View className="simple-route-info">
               <Text className="start-location-text">
@@ -205,28 +218,17 @@ const WaitingForDriver = ({ orderInfo, onOrderCancelled }) => {
               </Text>
             </View>
 
-            {/* 路线信息和取消订单按钮 */}
-            <View className="route-and-button-container">
-              <View className="route-info">
-                <View className="route-details">
-                  <Text className="route-time">{formatDuration(orderInfo.duration)}</Text>
-                  <Text className="route-distance">{formatDistance(orderInfo.distance)}</Text>
-                </View>
-                {orderInfo.toll > 0 && (
-                  <View className="route-details">
-                    <Text className="route-tolls">过路费: {orderInfo.toll}元</Text>
-                  </View>
-                )}
+            {/* 路线信息 */}
+            <View className="route-info">
+              <View className="route-details">
+                <Text className="route-time">{formatDuration(orderInfo.duration)}</Text>
+                <Text className="route-distance">{orderInfo.distance}公里</Text>
               </View>
-
-              {/* 取消订单按钮 */}
-              <Button
-                className="cancel-order-button"
-                color="danger"
-                onClick={handleCancelOrder}
-              >
-                取消订单
-              </Button>
+              {orderInfo.toll > 0 && (
+                <View className="route-details">
+                  <Text className="route-tolls">过路费: {orderInfo.toll}元</Text>
+                </View>
+              )}
             </View>
           </View>
         </View>

@@ -227,10 +227,10 @@
 /* 路线选择器容器 */
 .route-selector-container {
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   margin-bottom: 20px;
-  padding: 10px 0;
+  padding: 4px 0; /* 减少上下内边距以减少内容上方的空白 */
 }
 
 /* 横向滚动容器 */
@@ -248,33 +248,62 @@
 /* 单个路线标签 */
 .route-tab {
   display: inline-block;
-  padding: 12px 16px;
-  margin: 0 5px;
-  border-radius: 8px;
-  background-color: #f5f5f5;
+  padding: 2px 16px; /* 进一步减少上下内边距 */
+  margin: 0 4px;
+  border-radius: 12px;
+  background-color: #fff !important; /* 白底 */
+  border: 1px solid #1890ff !important; /* 蓝色边框 */
+  color: #1890ff !important; /* 蓝色文字 */
   cursor: pointer;
   min-width: 120px;
   text-align: center;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-top: none !important; /* 移除顶部边框 */
+  outline: none !important; /* 移除轮廓 */
+  box-shadow: none !important; /* 移除阴影 */
 }
 
 /* 选中的路线标签 */
 .route-tab.selected {
-  background-color: #1ecd86;
-  color: white;
+  background-color: #e6f7ff !important; /* 淡蓝色底 */
+  color: #1890ff !important; /* 蓝色文字 */
+  border: 1px solid #1890ff !important; /* 蓝色边框 */
+  border-top: none !important; /* 移除顶部边框 */
+  outline: none !important; /* 移除轮廓 */
+  box-shadow: none !important; /* 移除阴影 */
 }
 
 /* 路线信息 */
 .route-info {
   display: flex;
   flex-direction: column;
+  border: none !important; /* 移除边框 */
+  outline: none !important; /* 移除轮廓 */
+  box-shadow: none !important; /* 移除阴影 */
 }
 
 /* 路线标题 */
-.route-title {
-  font-size: 14px;
-  font-weight: bold;
-  margin-bottom: 5px;
+.route-tab .route-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 4px 0; /* 移除顶部外边距，保持底部外边距 */
+  color: #1890ff; /* 蓝色文字 */
+  border: none !important; /* 移除所有边框 */
+  outline: none !important; /* 移除轮廓 */
+  box-shadow: none !important; /* 移除阴影 */
+  text-decoration: none !important; /* 移除文本装饰 */
+  position: relative;
+}
+
+/* 确保移除任何伪元素可能产生的线条 */
+.route-tab .route-title::before,
+.route-tab .route-title::after {
+  display: none !important;
+}
+
+/* 选中时的路线标题 */
+.route-tab.selected .route-title {
+  color: #1890ff !important; /* 蓝色文字 */
 }
 
 /* 路线详情 */
@@ -285,17 +314,18 @@
 }
 
 /* 路线时间 */
-.route-time {
-  color: #666;
+.route-tab .route-time {
+  color: #1890ff; /* 蓝色文字 */
+  font-weight: 500;
 }
 
 /* 路线距离 */
-.route-distance {
-  color: #666;
+.route-tab .route-distance {
+  color: #1890ff; /* 蓝色文字 */
+  font-weight: 500;
 }
 
-/* 选中状态下的文字颜色 */
-.route-tab.selected .route-time,
-.route-tab.selected .route-distance {
-  color: rgba(255, 255, 255, 0.9);
+/* 路线过路费 */
+.route-tab .route-tolls {
+  color: #1890ff; /* 蓝色文字 */
 }

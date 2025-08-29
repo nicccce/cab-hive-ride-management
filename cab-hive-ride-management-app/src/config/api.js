@@ -33,7 +33,7 @@ export const API_ENDPOINTS = {
   ORDER_DETAIL: '/api/orders',
   ORDER_UNFINISHED: '/api/orders/unfinished',
   ORDER_DRIVER_UNFINISHED: '/api/orders/driver/unfinished',
-  ORDER_CANCEL: '/api/orders/{id}/cancel',
+  ORDER_CANCEL: '/api/orders/{id}',
 }
 
 // 角色定义

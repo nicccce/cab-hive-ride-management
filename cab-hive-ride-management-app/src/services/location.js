@@ -122,7 +122,7 @@ export const planDrivingRoute = (options) => {
       mode: 'driving',
       from: fromFormatted,
       to: toFormatted,
-      policy
+      // policy
     };
 
     // 可选参数
@@ -187,40 +187,75 @@ const processDrivingRoutes = (res) => {
  * 坐标解压函数
  */
 const decompressPolyline = (compressedCoors) => {
-  if (!compressedCoors || compressedCoors.length === 0) {
+  // 检查输入参数
+  if (!compressedCoors || !Array.isArray(compressedCoors)) {
+    console.warn("无效的压缩坐标数据:", compressedCoors);
+    return [];
+  }
+  
+  // 检查数组长度是否为偶数且大于0
+  if (compressedCoors.length === 0 || compressedCoors.length % 2 !== 0) {
+    console.warn("压缩坐标数据长度无效:", compressedCoors.length);
     return [];
   }
 
   const points = [];
   const kr = 1000000;
   
-  // 第一个点
-  let lastLat = compressedCoors[0];
-  let lastLng = compressedCoors[1];
-  points.push({ latitude: lastLat, longitude: lastLng });
-
-  // 解压后续点
-  for (let i = 2; i < compressedCoors.length; i += 2) {
-    const latDiff = compressedCoors[i] / kr;
-    const lngDiff = compressedCoors[i + 1] / kr;
+  try {
+    // 第一个点
+    let lastLat = compressedCoors[0];
+    let lastLng = compressedCoors[1];
     
-    lastLat += latDiff;
-    lastLng += lngDiff;
+    // 验证第一个点的坐标是否有效
+    if (typeof lastLat !== 'number' || typeof lastLng !== 'number' ||
+        Number.isNaN(lastLat) || Number.isNaN(lastLng)) {
+      console.warn("第一个点坐标无效:", { latitude: lastLat, longitude: lastLng });
+      return [];
+    }
     
     points.push({ latitude: lastLat, longitude: lastLng });
+
+    // 解压后续点
+    for (let i = 2; i < compressedCoors.length; i += 2) {
+      // 检查索引是否有效
+      if (i + 1 >= compressedCoors.length) {
+        console.warn("坐标数据不完整，跳过最后一个点");
+        break;
+      }
+      
+      // 获取差值
+      const latDiff = compressedCoors[i];
+      const lngDiff = compressedCoors[i + 1];
+      
+      // 验证差值是否有效
+      if (typeof latDiff !== 'number' || typeof lngDiff !== 'number' ||
+          Number.isNaN(latDiff) || Number.isNaN(lngDiff)) {
+        console.warn("坐标差值无效，跳过该点:", { latDiff, lngDiff });
+        continue;
+      }
+      
+      // 计算新坐标
+      lastLat += latDiff / kr;
+      lastLng += lngDiff / kr;
+      
+      // 验证新坐标是否有效
+      if (Number.isNaN(lastLat) || Number.isNaN(lastLng)) {
+        console.warn("计算出的坐标无效，跳过该点:", { latitude: lastLat, longitude: lastLng });
+        continue;
+      }
+      
+      points.push({ latitude: lastLat, longitude: lastLng });
+    }
+  } catch (error) {
+    console.error("解压坐标时发生错误:", error);
+    return [];
   }
 
   return points;
 };
 
-/**
- * 估算红绿灯数量（基于路线距离和城市平均密度）
- */
-const calculateTrafficLights = (route) => {
-  const distance = route.distance || 0;
-  // 简单估算：每公里约2-3个红绿灯
-  return Math.round(distance / 1000 * 2.5);
-};
+
 
 /**
  * 格式化坐标参数

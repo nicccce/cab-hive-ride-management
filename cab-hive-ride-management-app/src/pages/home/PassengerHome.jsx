@@ -4,7 +4,6 @@ import { View } from "@tarojs/components";
 import { getUnfinishedOrder, OrderStatus } from "../../services/order";
 import RideOrderPage from "../../components/RideOrder";
 import WaitingForDriver from "../../components/WaitingForDriver";
-import "./index.scss";
 
 const PassengerHome = () => {
   // 定时器引用

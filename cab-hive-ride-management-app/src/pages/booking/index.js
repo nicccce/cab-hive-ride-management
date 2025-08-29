@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import useAuth from '../../hooks/useAuth'
-import './index.scss'
 import PassengerHome from '../home/PassengerHome'
 
 const Booking = () => {

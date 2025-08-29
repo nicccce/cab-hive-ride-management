@@ -18,12 +18,13 @@
   z-index: 10;
 }
 
-.combined-info-container {
+// 信息和按钮的容器
+
+.order-info-container {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  margin-bottom: 20px; /* 添加与按钮组之间的间距 */
   padding: 15px;
 }
 // 简约的起点终点信息
@@ -36,7 +37,7 @@
 }
 
 .start-location-text {
-  color: #1ecd86;
+  color: #000;
   font-weight: bold;
 }
 
@@ -46,23 +47,21 @@
 }
 
 .end-location-text {
-  color: #ff4d4f;
+  color: #000;
   font-weight: bold;
 }
+// 路线信息和按钮容器
 
-// 位置行
 
-
-/* 路线信息 */
+// 路线信息容器
 .route-info {
-  display: flex;
-  flex-direction: column;
+  flex: 1;
   margin-top: 15px;
   padding-top: 15px;
   border-top: 1px solid #f0f0f0;
 }
 
-/* 路线详情 */
+// 路线详情
 .route-details {
   display: flex;
   justify-content: space-between;
@@ -70,21 +69,26 @@
   margin-bottom: 3px;
 }
 
-/* 路线时间 */
+// 路线时间
 .route-time {
   color: #666;
 }
 
-/* 路线距离 */
+// 路线距离
 .route-distance {
   color: #666;
 }
 
-/* 过路费 */
+// 过路费
 .route-tolls {
   color: #ff4d4f;
   font-weight: bold;
 }
+
+// 位置行
+/* 路线信息 */
+
+
 
 /* 等待信息 */
 .waiting-info {
@@ -104,9 +108,11 @@
 
 /* 取消订单按钮 */
 .cancel-order-button {
-  border-radius: 25px;
-  font-size: 18px;
+  border-radius: 15px;
+  font-size: 12px;
   font-weight: bold;
-  height: 50px;
-  line-height: 50px;
+  height: 30px;
+  line-height: 30px;
+  width: 100%;
+  margin-bottom: 20px;
 }
