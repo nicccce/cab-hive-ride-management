@@ -62,3 +62,20 @@ export const cancelOrder = async (orderId) => {
     method: 'DELETE'
   })
 }
+
+// 司机请求订单
+export const requestOrder = async () => {
+  return await request({
+    url: API_ENDPOINTS.ORDER_REQUEST,
+    method: 'GET'
+  })
+}
+
+// 司机接单
+export const takeOrder = async (params) => {
+  return await request({
+    url: API_ENDPOINTS.ORDER_TAKE,
+    method: 'POST',
+    data: params
+  })
+}

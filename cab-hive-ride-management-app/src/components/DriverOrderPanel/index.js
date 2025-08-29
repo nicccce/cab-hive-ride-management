@@ -1,11 +1,65 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { View, Text, Button, Map } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow, useDidHide } from '@tarojs/taro'
+import { requestOrder, takeOrder } from '../../services/order'
 import './index.scss'
 
 const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleSelect, onStartWork, onStopWork, isWorking, selectedVehicle, fetchVehicles }) => {
   const [showVehicleModal, setShowVehicleModal] = useState(false)
   const [vehicles, setVehicles] = useState(initialVehicles)
+  const [currentOrder, setCurrentOrder] = useState(null)
+
+    // 定时器引用
+    const loopRef = useRef(null);
+  
+    // 开始定时
+    const startLoop = () => {
+      // 先清除已存在的定时器
+      if (loopRef.current) {
+        clearInterval(loopRef.current);
+      }
+  
+      // 设置新的定时器，每2秒执行一次
+      loopRef.current = setInterval(async () => {
+        // 如果司机处于工作状态，请求订单
+        if (isWorking && selectedVehicle) {
+          try {
+            const response = await requestOrder();
+            if (response.code === 200 && response.data) {
+              setCurrentOrder(response.data);
+            } else {
+              // 如果没有订单，清空当前订单
+              setCurrentOrder(null);
+            }
+          } catch (error) {
+            console.error('请求订单失败:', error);
+            // 请求失败时也清空当前订单
+            setCurrentOrder(null);
+          }
+        }
+      }, 2000);
+    };
+  
+    // 停止定时
+    const stopLoop = () => {
+      if (loopRef.current) {
+        clearInterval(loopRef.current);
+        loopRef.current = null;
+      }
+    };
+  
+    // 页面显示时获取选点结果并恢复定时
+    useDidShow(() => {
+      // 恢复定时
+      startLoop();
+    });
+  
+    // 页面隐藏时清理插件数据并停止位置跟踪
+    useDidHide(() => {
+      // 停止位置跟踪
+      stopLoop();
+    });
+
   // 地图初始配置
   const [mapConfig, setMapConfig] = useState({
     longitude: 120.1551,  // 杭州经度
@@ -58,6 +112,39 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
       title: '已停止接单',
       icon: 'success'
     })
+  }
+
+  // 处理接单
+  const handleTakeOrder = async () => {
+    if (!currentOrder || !selectedVehicle) return;
+    
+    try {
+      const response = await takeOrder({
+        order_id: currentOrder.id,
+        vehicle_id: selectedVehicle.id
+      });
+      
+      if (response.code === 200) {
+        Taro.showToast({
+          title: '接单成功',
+          icon: 'success'
+        });
+        // 接单成功后清空当前订单
+        setCurrentOrder(null);
+        // 可以在这里添加其他接单成功的处理逻辑
+      } else {
+        Taro.showToast({
+          title: '接单失败',
+          icon: 'none'
+        });
+      }
+    } catch (error) {
+      console.error('接单失败:', error);
+      Taro.showToast({
+        title: '接单失败',
+        icon: 'none'
+      });
+    }
   }
   
   // 前往车辆管理页面
@@ -118,6 +205,45 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
     )
   }
   
+  // 渲染订单信息
+  const renderOrderInfo = () => {
+    if (!currentOrder) return null;
+    
+    return (
+      <View className="order-info-section">
+        <View className="order-info-header">
+          <Text className="order-info-title">新订单</Text>
+        </View>
+        
+        <View className="order-details">
+          <View className="order-detail-row">
+            <Text className="order-detail-label">起点:</Text>
+            <Text className="order-detail-value">{currentOrder.start_location?.name || '未知地点'}</Text>
+          </View>
+          <View className="order-detail-row">
+            <Text className="order-detail-label">终点:</Text>
+            <Text className="order-detail-value">{currentOrder.end_location?.name || '未知地点'}</Text>
+          </View>
+          <View className="order-detail-row">
+            <Text className="order-detail-label">距离:</Text>
+            <Text className="order-detail-value">{currentOrder.distance ? (currentOrder.distance / 1000).toFixed(1) + '公里' : '未知'}</Text>
+          </View>
+          <View className="order-detail-row">
+            <Text className="order-detail-label">预估费用:</Text>
+            <Text className="order-detail-value">{currentOrder.fare ? currentOrder.fare + '元' : '未知'}</Text>
+          </View>
+        </View>
+        
+        <Button
+          className="take-order-button"
+          onClick={handleTakeOrder}
+        >
+          接单
+        </Button>
+      </View>
+    );
+  };
+
   // 渲染底部工作状态
   const renderBottomSection = () => {
     if (isWorking && selectedVehicle) {
@@ -138,6 +264,8 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
               <Text className="vehicle-info-value">{selectedVehicle.brand} {selectedVehicle.model}</Text>
             </View>
           </View>
+          
+          {renderOrderInfo()}
           
           <Button
             className="stop-work-button"
@@ -163,10 +291,6 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
   
   return (
     <View className="driver-order-panel">
-      <View className="welcome-section">
-        <Text className="welcome-title">司机工作台</Text>
-        <Text className="welcome-subtitle">欢迎回来，{userInfo?.nick_name || '司机'}</Text>
-      </View>
       
       {/* 微信地图组件 */}
       {isWorking && selectedVehicle && (
@@ -182,6 +306,18 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
           enable3D={mapConfig.enable3D}
           showCompass={mapConfig.showCompass}
           showScale={mapConfig.showScale}
+          // 如果有订单，绘制路线
+          {...(currentOrder && currentOrder.route_points && {
+            polyline: [{
+              points: currentOrder.route_points.map(point => ({
+                longitude: point.longitude,
+                latitude: point.latitude
+              })),
+              color: '#007AFF',
+              width: 4,
+              dottedLine: false
+            }]
+          })}
         />
       )}
       

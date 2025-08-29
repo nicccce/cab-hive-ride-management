@@ -34,6 +34,10 @@ export const API_ENDPOINTS = {
   ORDER_UNFINISHED: '/api/orders/unfinished',
   ORDER_DRIVER_UNFINISHED: '/api/orders/driver/unfinished',
   ORDER_CANCEL: '/api/orders/{id}',
+  
+  // 司机订单相关
+  ORDER_REQUEST: '/api/rides/order/request',
+  ORDER_TAKE: '/api/rides/order/take',
 }
 
 // 角色定义

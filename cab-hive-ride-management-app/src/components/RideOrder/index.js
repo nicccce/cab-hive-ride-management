@@ -493,14 +493,11 @@ const RideOrderPage = () => {
       // 调用创建立即出发订单接口
       const result = await createImmediateOrder(orderParams);
       console.log("立即出发订单创建结果：", result);
-
-      if (result.code === 200) {
+      if (result.success === true) {
         Taro.showToast({
           title: "订单创建成功",
           icon: "success"
         });
-        
-        
       } else {
         Taro.showToast({
           title: result.msg || "订单创建失败",
