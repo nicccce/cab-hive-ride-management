@@ -96,3 +96,11 @@ export const takeOrder = async (params) => {
     data: params
   })
 }
+
+// 司机结束订单
+export const finishOrder = async () => {
+  return await request({
+    url: API_ENDPOINTS.ORDER_FINISH,
+    method: 'POST'
+  })
+}

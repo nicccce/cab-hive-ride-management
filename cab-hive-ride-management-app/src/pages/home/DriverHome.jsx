@@ -13,6 +13,7 @@ import {
 } from "../../services/order";
 import { uploadDriverLocation } from "../../services/location";
 import DriverWaitingForPassenger from "../../components/DriverWaitingForPassenger";
+import DriverRideInProgress from "../../components/DriverRideInProgress";
 
 const DriverHome = () => {
   const { userInfo } = useAuth();
@@ -283,7 +284,12 @@ const DriverHome = () => {
                   />
                 );
               case OrderStatus.InProgress:
-                return <View>行程进行中</View>;
+                return (
+                  <DriverRideInProgress
+                    unfinishedOrder={unfinishedOrder}
+                    driverLocation={userLocation}
+                  />
+                );
               default:
                 return <View>未知订单状态: {unfinishedOrder.status}</View>;
             }

@@ -39,6 +39,7 @@ export const API_ENDPOINTS = {
   ORDER_TAKE: '/api/rides/order/take',
   ORDER_PHONE_DIGITS: '/api/rides/order/phone-digits',
   ORDER_VERIFY_PHONE_START: '/api/rides/order/verify-phone-start',
+  ORDER_FINISH: '/api/rides/order/finish',
   
   // 司机位置相关
   DRIVER_LOCATION: '/api/rides/location',

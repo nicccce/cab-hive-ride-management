@@ -1,0 +1,122 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.page-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-container {
+  flex: 1;
+  width: 100%;
+}
+
+.ride-info-container {
+  background-color: white;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  margin-top: -20px;
+  position: relative;
+  z-index: 1;
+}
+
+.route-direction-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 20px;
+}
+
+.location-item {
+  display: flex;
+  align-items: center;
+}
+
+.location-label {
+  font-weight: bold;
+  margin-right: 10px;
+  color: #333;
+  min-width: 40px;
+}
+
+.location-name {
+  flex: 1;
+  color: #666;
+  font-size: 14px;
+}
+
+.arrow-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.arrow {
+  font-size: 24px;
+  color: #1aad19;
+  font-weight: bold;
+}
+
+/* 结束订单滑块容器 */
+.finish-order-slider-container {
+  margin-top: 20px;
+}
+
+/* 滑块轨道 */
+.slider-track {
+  position: relative;
+  height: 50px;
+  background-color: #e0e0e0;
+  border-radius: 25px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* 滑块填充 */
+.slider-fill {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(to right, #4facfe, #00f2fe);
+  border-radius: 25px;
+}
+
+/* 滑块按钮 */
+.slider-thumb {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background-color: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: transform 0.1s ease;
+}
+
+.slider-text {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.loading-text {
+  text-align: center;
+  padding: 20px;
+  font-size: 16px;
+  color: #666;
+}
