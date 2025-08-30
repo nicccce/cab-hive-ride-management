@@ -33,23 +33,23 @@ type VehicleAuditRequest struct {
 
 // VehicleResponse 定义车辆信息响应的结构体
 type VehicleResponse struct {
-	ID                string      `json:"id"`                 // 车辆ID
-	DriverID          string      `json:"driver_id"`          // 司机ID
-	DriverName        string      `json:"driver_name"`        // 司机姓名
-	DriverPhone       string      `json:"driver_phone"`       // 司机电话
-	PlateNumber       string      `json:"plate_number"`       // 车牌号码
-	VehicleType       string      `json:"vehicle_type"`       // 车辆类型
-	Brand             string      `json:"brand"`              // 车辆品牌
-	Model             string      `json:"model"`              // 车辆型号
-	Color             string      `json:"color"`              // 车辆颜色
-	Year              int         `json:"year"`               // 制造年份
-	RegistrationImage string      `json:"registration_image"` // 行驶证图片URL
-	InsuranceExpiry   string      `json:"insurance_expiry"`   // 保险到期日期
-	Status            string      `json:"status"`             // 状态
-	Comment           string      `json:"comment"`            // 管理员审核备注
-	SubmitTime        string      `json:"submit_time"`        // 提交时间
-	ReviewTime        string      `json:"review_time"`        // 审核时间
-	Reviewer          string      `json:"reviewer"`           // 审核人
+	ID                uint   `json:"id"`                 // 车辆ID
+	DriverID          string `json:"driver_id"`          // 司机ID
+	DriverName        string `json:"driver_name"`        // 司机姓名
+	DriverPhone       string `json:"driver_phone"`       // 司机电话
+	PlateNumber       string `json:"plate_number"`       // 车牌号码
+	VehicleType       string `json:"vehicle_type"`       // 车辆类型
+	Brand             string `json:"brand"`              // 车辆品牌
+	Model             string `json:"model"`              // 车辆型号
+	Color             string `json:"color"`              // 车辆颜色
+	Year              int    `json:"year"`               // 制造年份
+	RegistrationImage string `json:"registration_image"` // 行驶证图片URL
+	InsuranceExpiry   string `json:"insurance_expiry"`   // 保险到期日期
+	Status            string `json:"status"`             // 状态
+	Comment           string `json:"comment"`            // 管理员审核备注
+	SubmitTime        string `json:"submit_time"`        // 提交时间
+	ReviewTime        string `json:"review_time"`        // 审核时间
+	Reviewer          string `json:"reviewer"`           // 审核人
 }
 
 // SubmitVehicle 处理提交车辆信息请求
@@ -112,7 +112,7 @@ func SubmitVehicle(c *gin.Context) {
 
 	// 构造响应数据
 	resp := map[string]interface{}{
-		"vehicle_id":    fmt.Sprintf("vehicle_%d", vehicleReview.ID),
+		"vehicle_id":    vehicleReview.ID,
 		"status":        "pending",
 		"verify_status": "verifying",
 		"submit_time":   time.Now().UTC().Format(time.RFC3339),
@@ -237,10 +237,6 @@ func GetPendingVehicle(c *gin.Context) {
 	// 获取车辆审核ID
 	reviewID := c.Param("id")
 
-	// 从ID中提取数字部分
-	var reviewIDNum uint
-	fmt.Sscanf(reviewID, "%d", &reviewIDNum)
-
 	// 从上下文中获取用户信息
 	payload, exists := c.Get("payload")
 	if !exists {
@@ -259,7 +255,7 @@ func GetPendingVehicle(c *gin.Context) {
 
 	// 查找车辆审核记录
 	var vehicleReview model.VehicleReview
-	query := database.DB.Where("id = ?", reviewIDNum)
+	query := database.DB.Where("id = ?", reviewID)
 
 	// 如果不是管理员，只查询当前用户的审核记录
 	if claims.RoleID != 3 {
@@ -268,7 +264,7 @@ func GetPendingVehicle(c *gin.Context) {
 
 	if err := query.First(&vehicleReview).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Error("待审核车辆记录不存在", "id", reviewIDNum)
+			log.Error("待审核车辆记录不存在", "id", reviewID)
 			response.Fail(c, response.ErrNotFound)
 		} else {
 			log.Error("数据库查询失败", "error", err)
@@ -295,7 +291,7 @@ func GetPendingVehicle(c *gin.Context) {
 	}
 
 	// 返回成功响应
-	log.Info("查询待审核车辆详情成功", "id", reviewIDNum)
+	log.Info("查询待审核车辆详情成功", "id", reviewID)
 	response.Success(c, vehicleResp)
 }
 
@@ -415,15 +411,11 @@ func ReviewVehicle(c *gin.Context) {
 		return
 	}
 
-	// 从ID中提取数字部分
-	var reviewIDNum uint
-	fmt.Sscanf(reviewID, "%d", &reviewIDNum)
-
 	// 查找车辆审核记录
 	var vehicleReview model.VehicleReview
-	if err := database.DB.Where("id = ?", reviewIDNum).First(&vehicleReview).Error; err != nil {
+	if err := database.DB.Where("id = ?", reviewID).First(&vehicleReview).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Error("车辆审核记录不存在", "id", reviewIDNum)
+			log.Error("车辆审核记录不存在", "id", reviewID)
 			response.Fail(c, response.ErrNotFound)
 		} else {
 			log.Error("数据库查询失败", "error", err)
@@ -431,24 +423,24 @@ func ReviewVehicle(c *gin.Context) {
 		}
 		return
 	}
-
+	
 	// 检查状态是否为pending
 	if vehicleReview.Status != "pending" {
 		log.Error("车辆审核记录状态不为pending", "status", vehicleReview.Status)
 		response.Fail(c, response.ErrInvalidRequest.WithTips("审核记录状态不为pending"))
 		return
 	}
-
+	
 	// 更新审核记录状态
 	vehicleReview.Status = req.Action
 	vehicleReview.Comment = req.Comment
-
+	
 	if err := database.DB.Save(&vehicleReview).Error; err != nil {
 		log.Error("更新车辆审核记录失败", "error", err)
 		response.Fail(c, response.ErrDatabase.WithOrigin(err))
 		return
 	}
-
+	
 	// 如果审核通过，创建或更新车辆记录
 	if req.Action == "approved" {
 		if vehicleReview.ActionType == "submit" {
@@ -468,7 +460,7 @@ func ReviewVehicle(c *gin.Context) {
 			}
 			now := time.Now()
 			vehicleReview.ReviewTime = now
-
+	
 			if err := database.DB.Create(&vehicle).Error; err != nil {
 				log.Error("创建车辆记录失败", "error", err)
 				response.Fail(c, response.ErrDatabase.WithOrigin(err))
@@ -487,7 +479,7 @@ func ReviewVehicle(c *gin.Context) {
 				}
 				return
 			}
-
+	
 			vehicle.PlateNumber = vehicleReview.PlateNumber
 			vehicle.VehicleType = vehicleReview.VehicleType
 			vehicle.Brand = vehicleReview.Brand
@@ -500,7 +492,7 @@ func ReviewVehicle(c *gin.Context) {
 			now := time.Now()
 			vehicle.ReviewTime = &now
 			vehicleReview.ReviewTime = now
-
+	
 			if err := database.DB.Save(&vehicle).Error; err != nil {
 				log.Error("更新车辆记录失败", "error", err)
 				response.Fail(c, response.ErrDatabase.WithOrigin(err))
@@ -514,9 +506,9 @@ func ReviewVehicle(c *gin.Context) {
 		now := time.Now()
 		vehicleReview.ReviewTime = now
 	}
-
+	
 	// 返回成功响应
-	log.Info("车辆审核成功", "id", reviewIDNum, "action", req.Action)
+	log.Info("车辆审核成功", "id", reviewID, "action", req.Action)
 	response.Success(c, nil)
 }
 
@@ -606,8 +598,8 @@ func GetVehicles(c *gin.Context) {
 		}
 
 		vehicleList[i] = VehicleResponse{
-			ID:                fmt.Sprintf("vehicle_%d", v.ID),
-			DriverID:          fmt.Sprintf("driver_%d", v.DriverID),
+			ID:                v.ID,
+			DriverID:          v.DriverID,
 			DriverName:        driverName,
 			DriverPhone:       driverPhone,
 			PlateNumber:       v.PlateNumber,
@@ -681,13 +673,9 @@ func UpdateVehicle(c *gin.Context) {
 		return
 	}
 
-	// 从vehicle_id中提取数字部分
-	var vehicleIDNum uint
-	fmt.Sscanf(vehicleID, "vehicle_%d", &vehicleIDNum)
-
 	// 查找车辆
 	var vehicle model.Vehicle
-	if err := database.DB.Where("id = ?", vehicleIDNum).First(&vehicle).Error; err != nil {
+	if err := database.DB.Where("id = ?", vehicleID).First(&vehicle).Error; err != nil {
 		response.Fail(c, response.ErrNotFound)
 		return
 	}
@@ -725,7 +713,7 @@ func UpdateVehicle(c *gin.Context) {
 
 	// 构造响应数据
 	resp := map[string]interface{}{
-		"vehicle_id":    fmt.Sprintf("vehicle_%d", vehicleReview.ID),
+		"vehicle_id":    vehicleReview.ID,
 		"status":        "pending",
 		"verify_status": "verifying",
 		"submit_time":   time.Now().UTC().Format(time.RFC3339),
@@ -740,13 +728,9 @@ func GetVehicle(c *gin.Context) {
 	// 获取车辆ID
 	vehicleID := c.Param("vehicle_id")
 
-	// 从vehicle_id中提取数字部分
-	var vehicleIDNum uint
-	fmt.Sscanf(vehicleID, "vehicle_%d", &vehicleIDNum)
-
 	// 查找车辆
 	var vehicle model.Vehicle
-	if err := database.DB.Where("id = ?", vehicleIDNum).First(&vehicle).Error; err != nil {
+	if err := database.DB.Where("id = ?", vehicleID).First(&vehicle).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.Fail(c, response.ErrNotFound)
 		} else {
@@ -775,8 +759,8 @@ func GetVehicle(c *gin.Context) {
 
 	// 转换为响应格式
 	resp := VehicleResponse{
-		ID:                fmt.Sprintf("vehicle_%d", vehicle.ID),
-		DriverID:          fmt.Sprintf("driver_%d", vehicle.DriverID),
+		ID:                vehicle.ID,
+		DriverID:          vehicle.DriverID,
 		DriverName:        driverName,
 		DriverPhone:       driverPhone,
 		PlateNumber:       vehicle.PlateNumber,
@@ -808,10 +792,6 @@ func DeleteVehicle(c *gin.Context) {
 	// 获取车辆ID
 	vehicleID := c.Param("vehicle_id")
 
-	// 从vehicle_id中提取数字部分
-	var vehicleIDNum uint
-	fmt.Sscanf(vehicleID, "vehicle_%d", &vehicleIDNum)
-
 	// 从上下文中获取载荷
 	payloadInterface, exists := c.Get("payload")
 	if !exists {
@@ -827,7 +807,7 @@ func DeleteVehicle(c *gin.Context) {
 
 	// 查找车辆
 	var vehicle model.Vehicle
-	if err := database.DB.Where("id = ?", vehicleIDNum).First(&vehicle).Error; err != nil {
+	if err := database.DB.Where("id = ?", vehicleID).First(&vehicle).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.Fail(c, response.ErrNotFound)
 		} else {

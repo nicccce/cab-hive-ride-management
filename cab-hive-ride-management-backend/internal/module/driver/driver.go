@@ -156,7 +156,7 @@ func DriverRegister(c *gin.Context) {
 	// 构造响应数据
 	resp := DriverRegisterResponse{
 		Status:              "pending",
-		DriverID:            fmt.Sprintf("review_%d", driverReview.ID),
+		DriverID:            fmt.Sprintf("%d", driverReview.ID),
 		EstimatedReviewTime: "24小时内",
 	}
 
@@ -511,10 +511,6 @@ func GetPendingDriver(c *gin.Context) {
 	// 获取司机审核ID
 	reviewID := c.Param("id")
 
-	// 从ID中提取数字部分
-	var reviewIDNum uint
-	fmt.Sscanf(reviewID, "%d", &reviewIDNum)
-
 	// 从上下文中获取用户信息
 	payload, exists := c.Get("payload")
 	if !exists {
@@ -533,7 +529,7 @@ func GetPendingDriver(c *gin.Context) {
 
 	// 查找司机审核记录
 	var driverReview model.DriverReview
-	query := database.DB.Where("id = ?", reviewIDNum)
+	query := database.DB.Where("id = ?", reviewID)
 
 	// 如果不是管理员，只查询当前用户的审核记录
 	if claims.RoleID != 3 {
@@ -542,7 +538,7 @@ func GetPendingDriver(c *gin.Context) {
 
 	if err := query.First(&driverReview).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Error("待审核司机记录不存在", "id", reviewIDNum)
+			log.Error("待审核司机记录不存在", "id", reviewID)
 			response.Fail(c, response.ErrNotFound)
 		} else {
 			log.Error("数据库查询失败", "error", err)
@@ -550,7 +546,7 @@ func GetPendingDriver(c *gin.Context) {
 		}
 		return
 	}
-
+	
 	// 转换为响应格式
 	driverResp := PendingDriverResponse{
 		ID:              driverReview.ID,
@@ -569,9 +565,9 @@ func GetPendingDriver(c *gin.Context) {
 			return ""
 		}(),
 	}
-
+	
 	// 返回成功响应
-	log.Info("查询待审核司机详情成功", "id", reviewIDNum)
+	log.Info("查询待审核司机详情成功", "id", reviewID)
 	response.Success(c, driverResp)
 }
 
@@ -689,15 +685,11 @@ func ReviewDriver(c *gin.Context) {
 		return
 	}
 
-	// 从ID中提取数字部分
-	var reviewIDNum uint
-	fmt.Sscanf(reviewID, "%d", &reviewIDNum)
-
 	// 查找司机审核记录
 	var driverReview model.DriverReview
-	if err := database.DB.Where("id = ?", reviewIDNum).First(&driverReview).Error; err != nil {
+	if err := database.DB.Where("id = ?", reviewID).First(&driverReview).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Error("司机审核记录不存在", "id", reviewIDNum)
+			log.Error("司机审核记录不存在", "id", reviewID)
 			response.Fail(c, response.ErrNotFound)
 		} else {
 			log.Error("数据库查询失败", "error", err)
@@ -798,7 +790,7 @@ func ReviewDriver(c *gin.Context) {
 	}
 
 	// 返回成功响应
-	log.Info("司机审核成功", "id", reviewIDNum, "action", req.Action)
+	log.Info("司机审核成功", "id", reviewID, "action", req.Action)
 	response.Success(c, nil)
 }
 
@@ -844,8 +836,8 @@ func GetDriverVehicles(c *gin.Context) {
 		}
 
 		vehicleList[i] = vehicle.VehicleResponse{
-			ID:                fmt.Sprintf("vehicle_%d", v.ID),
-			DriverID:          fmt.Sprintf("driver_%d", v.DriverID),
+			ID:                v.ID,
+			DriverID:          v.DriverID,
 			DriverName:        driverName,
 			DriverPhone:       driverPhone,
 			PlateNumber:       v.PlateNumber,

@@ -280,10 +280,6 @@ func GetOrder(c *gin.Context) {
 		return
 	}
 
-	// 从ID中提取数字部分
-	var orderIDNum uint
-	fmt.Sscanf(orderID, "%d", &orderIDNum)
-
 	// 从上下文中获取用户信息
 	payload, exists := c.Get("payload")
 	if !exists {
@@ -302,7 +298,7 @@ func GetOrder(c *gin.Context) {
 
 	// 查找订单
 	var order model.Order
-	query := database.DB.Where("id = ?", orderIDNum)
+	query := database.DB.Where("id = ?", orderID)
 
 	// 如果不是管理员，只查询当前用户的订单
 	if claims.RoleID != 3 {
@@ -311,7 +307,7 @@ func GetOrder(c *gin.Context) {
 
 	if err := query.First(&order).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Error("订单记录不存在", "id", orderIDNum)
+			log.Error("订单记录不存在", "id", orderID)
 			response.Fail(c, response.ErrNotFound)
 		} else {
 			log.Error("数据库查询失败", "error", err)
@@ -319,7 +315,7 @@ func GetOrder(c *gin.Context) {
 		}
 		return
 	}
-
+	
 	// 转换为响应格式
 	orderResp := OrderResponse{
 		ID:            order.ID,
@@ -365,9 +361,9 @@ func GetOrder(c *gin.Context) {
 			return nil
 		}(),
 	}
-
+	
 	// 返回成功响应
-	log.Info("查询订单详情成功", "id", orderIDNum)
+	log.Info("查询订单详情成功", "id", orderID)
 	response.Success(c, orderResp)
 }
 
@@ -562,10 +558,6 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
-	// 从ID中提取数字部分
-	var orderIDNum uint
-	fmt.Sscanf(orderID, "%d", &orderIDNum)
-
 	// 从上下文中获取用户信息
 	payload, exists := c.Get("payload")
 	if !exists {
@@ -584,9 +576,9 @@ func CancelOrder(c *gin.Context) {
 
 	// 查找订单
 	var order model.Order
-	if err := database.DB.Where("id = ?", orderIDNum).First(&order).Error; err != nil {
+	if err := database.DB.Where("id = ?", orderID).First(&order).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Error("订单记录不存在", "id", orderIDNum)
+			log.Error("订单记录不存在", "id", orderID)
 			response.Fail(c, response.ErrNotFound)
 		} else {
 			log.Error("数据库查询失败", "error", err)
@@ -594,39 +586,39 @@ func CancelOrder(c *gin.Context) {
 		}
 		return
 	}
-
+	
 	// 验证订单是否属于当前用户
 	if order.UserOpenID != claims.OpenID {
 		log.Error("订单不属于当前用户", "order_user_open_id", order.UserOpenID, "user_open_id", claims.OpenID)
 		response.Fail(c, response.ErrUnauthorized)
 		return
 	}
-
+	
 	// 验证订单状态是否为等待司机接单
 	if order.Status != model.OrderStatusWaitingForDriver {
 		log.Error("订单状态不是等待司机接单，无法取消", "order_status", order.Status)
 		response.Fail(c, response.ErrInvalidRequest.WithTips("订单状态不是等待司机接单，无法取消"))
 		return
 	}
-
+	
 	// 更新订单状态为已取消
 	now := time.Now()
 	order.Status = model.OrderStatusCancelled
 	order.CancelReason = "用户取消"
 	order.EndTime = &now
-
+	
 	if err := database.DB.Save(&order).Error; err != nil {
 		log.Error("更新订单状态失败", "error", err)
 		response.Fail(c, response.ErrDatabase.WithOrigin(err))
 		return
 	}
-
+	
 	// 从Redis中移除订单
 	if err := RemoveOrderFromRedis(order.ID, model.OrderStatusWaitingForDriver); err != nil {
 		log.Error("从Redis移除订单失败", "error", err, "order_id", order.ID)
 		// 注意：这里不返回错误，因为订单已经成功更新到数据库
 	}
-
+	
 	// 返回成功响应
 	log.Info("取消订单成功", "order_id", order.ID)
 	response.Success(c, nil)
