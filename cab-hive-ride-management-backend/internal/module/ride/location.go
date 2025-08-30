@@ -88,9 +88,10 @@ func UploadLocation(c *gin.Context) {
 			distance := calculateDistance(
 				req.Latitude, req.Longitude,
 				activeOrder.StartLocation.Latitude, activeOrder.StartLocation.Longitude)
+			//log.Info("司机位置", "open_id", payload.OpenID, "latitude", req.Latitude, "longitude", req.Longitude, "distance", fmt.Sprintf("%.2f公里", distance))
 
 			// 设置距离阈值（单位：公里），20米 = 0.02公里
-			const distanceThreshold = 0.02 // 20米阈值
+			const distanceThreshold = 0.1 // 100米阈值
 
 			// 如果距离小于阈值，则记录日志并更新订单状态
 			if distance <= distanceThreshold {
