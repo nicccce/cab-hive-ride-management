@@ -54,7 +54,7 @@ const WaitingForDriverArrive = ({ orderInfo, driverLocation }) => {
 
   // 更新地图标记
   useEffect(() => {
-    if (!orderInfo || orderInfo.status != OrderStatus.WaitingForPickup) return;
+    if (!orderInfo || (orderInfo.status != OrderStatus.WaitingForPickup && orderInfo.status != OrderStatus.DriverArrived)) return;
 
     // 设置起点标记
     const startMarker = {
@@ -176,7 +176,10 @@ const WaitingForDriverArrive = ({ orderInfo, driverLocation }) => {
           <View className="order-info-container">
             {/* 等待司机接单提示 */}
             <View className="waiting-info">
-              <Text className="waiting-text">司机正在赶来...</Text>
+              {orderInfo.status === OrderStatus.WaitingForPickup ?
+                <Text className="waiting-text">司机正在赶来...</Text> :
+                <Text className="waiting-text">司机已经到达，请尽快上车</Text>
+              }
             </View>
 
             {/* 司机信息 */}

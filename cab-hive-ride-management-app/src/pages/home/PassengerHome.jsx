@@ -157,25 +157,41 @@ const PassengerHome = () => {
                 />
               );
             case OrderStatus.WaitingForPickup:
-              // 合并订单信息、司机信息和车辆信息
-              const orderInfoWithDriverAndVehicle = {
-                ...unfinishedOrder,
-                driver_name: driverInfo?.name || unfinishedOrder?.driver_name,
-                vehicle_plate:
-                  vehicleInfo?.plate_number || unfinishedOrder?.vehicle_plate,
-                vehicle_color:
-                  vehicleInfo?.color || unfinishedOrder?.vehicle_color,
-                vehicle_model:
-                  vehicleInfo?.model || unfinishedOrder?.vehicle_model,
-              };
               return (
                 <WaitingForDriverArrive
-                  orderInfo={orderInfoWithDriverAndVehicle}
+                  orderInfo={{
+                    ...unfinishedOrder,
+                    driver_name:
+                      driverInfo?.name || unfinishedOrder?.driver_name,
+                    vehicle_plate:
+                      vehicleInfo?.plate_number ||
+                      unfinishedOrder?.vehicle_plate,
+                    vehicle_color:
+                      vehicleInfo?.color || unfinishedOrder?.vehicle_color,
+                    vehicle_model:
+                      vehicleInfo?.model || unfinishedOrder?.vehicle_model,
+                  }}
                   driverLocation={driverLocation}
                 />
               );
             case OrderStatus.DriverArrived:
-              return <View>司机已到达，等待上车</View>;
+              return (
+                <WaitingForDriverArrive
+                  orderInfo={{
+                    ...unfinishedOrder,
+                    driver_name:
+                      driverInfo?.name || unfinishedOrder?.driver_name,
+                    vehicle_plate:
+                      vehicleInfo?.plate_number ||
+                      unfinishedOrder?.vehicle_plate,
+                    vehicle_color:
+                      vehicleInfo?.color || unfinishedOrder?.vehicle_color,
+                    vehicle_model:
+                      vehicleInfo?.model || unfinishedOrder?.vehicle_model,
+                  }}
+                  driverLocation={driverLocation}
+                />
+              );
             case OrderStatus.InProgress:
               return <View>行程进行中</View>;
             case OrderStatus.WaitingForPayment:
