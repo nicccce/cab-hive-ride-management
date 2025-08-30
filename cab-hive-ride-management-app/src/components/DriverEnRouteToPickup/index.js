@@ -2,6 +2,7 @@ import { View, Map, Text, Button } from "@tarojs/components";
 import { useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
 import "./index.scss";
+import { navigateToRoutePlanPlugin } from "../../services/location";
 
 const DriverEnRouteToPickup = ({ unfinishedOrder, driverLocation }) => {
     // 地图初始配置
@@ -131,22 +132,19 @@ const DriverEnRouteToPickup = ({ unfinishedOrder, driverLocation }) => {
 
     // 导航至起点
     const navigateToStart = () => {
-        if (!unfinishedOrder) return;
-
-        // 使用微信小程序的打开地图导航功能
-        Taro.openLocation({
-          latitude: unfinishedOrder.start_location.latitude,
-          longitude: unfinishedOrder.start_location.longitude,
-          name: unfinishedOrder.start_location.name || '乘客起点',
-          address: unfinishedOrder.start_location.address || '乘客起点',
-          scale: 18
-        }).catch(err => {
-          console.error('导航失败:', err);
-          Taro.showToast({
-            title: '导航失败，请重试',
-            icon: 'none'
-          });
-        });
+        if(!unfinishedOrder||!unfinishedOrder.start_location){
+            return;
+        }
+        try {
+            navigateToRoutePlanPlugin({endPoint : unfinishedOrder.start_location,mode:"driving",navigation:1});
+        } catch (error) {
+            console.error("导航至起点失败:", error);
+            Taro.showToast({
+                title: "导航启动失败，请重试",
+                icon: "none",
+                duration: 2000
+            });
+        }
     };
 
     if (!unfinishedOrder) {

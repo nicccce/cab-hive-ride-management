@@ -38,7 +38,7 @@ const DriverHome = () => {
         setUnfinishedOrder(null);
       } else {
         setUnfinishedOrder(res.data);
-        setSelectedVehicle(unfinishedOrder.vehicle_id);
+        setSelectedVehicle(res.data.vehicle_id);
         setIsWorking(true);
       }
     } catch (error) {

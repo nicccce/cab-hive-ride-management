@@ -61,6 +61,59 @@ export const createMapMarker = (location, title = '位置', iconPath = null) => 
   }
 }
 
+// 导航到路线规划插件
+export const navigateToRoutePlanPlugin = async (options = {}) => {
+  const { key, referer } = LBS_CONFIG;
+  const {
+    endPoint,
+    startPoint,
+    mode,
+    navigation
+  } = options;
+
+  // 必须参数验证
+  if (!endPoint) {
+    throw new Error('缺少终点信息endPoint');
+  }
+
+  // 构建URL参数
+  let url = `plugin://routePlan/index?key=${key}&referer=${referer}`;
+  
+  // 添加终点参数
+  if (typeof endPoint === 'object') {
+    url += `&endPoint=${JSON.stringify(endPoint)}`;
+  } else {
+    url += `&endPoint=${endPoint}`;
+  }
+  
+  // 添加可选参数
+  if (startPoint) {
+    if (typeof startPoint === 'object') {
+      url += `&startPoint=${JSON.stringify(startPoint)}`;
+    } else {
+      url += `&startPoint=${startPoint}`;
+    }
+  }
+  
+  if (mode) {
+    url += `&mode=${mode}`;
+  }
+  
+  if (navigation !== undefined) {
+    url += `&navigation=${navigation}`;
+  }
+
+  try {
+    await Taro.navigateTo({ url });
+  } catch (error) {
+    console.error('打开路线规划插件失败：', error);
+    Taro.showToast({
+      title: '打开路线规划失败',
+      icon: 'none'
+    });
+  }
+}
+
 const qqmapsdk = new QQMapWX({
   key: LBS_CONFIG.key
 });

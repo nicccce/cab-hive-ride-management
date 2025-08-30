@@ -59,6 +59,10 @@ export default defineAppConfig({
     chooseLocation: {
       version: "1.0.12",
       provider: "wx76a9a06e5b4e693e"
+    },
+    routePlan: {
+      version: "2.0.5",
+      provider: "wx50b5593e81dd937a"
     }
   }
 })
