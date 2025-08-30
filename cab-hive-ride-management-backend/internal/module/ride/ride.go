@@ -316,11 +316,11 @@ func FinishOrder(c *gin.Context) {
 	now := time.Now()
 	activeOrder.Status = model.OrderStatusWaitingForPayment
 	activeOrder.EndTime = &now
-	
+
 	// 保存订单到数据库
 	if err := database.DB.Model(&model.Order{}).Where("id = ?", activeOrder.ID).Updates(map[string]interface{}{
-		"status":    model.OrderStatusWaitingForPayment,
-		"end_time":  now,
+		"status":   model.OrderStatusWaitingForPayment,
+		"end_time": now,
 	}).Error; err != nil {
 		response.Fail(c, response.ErrDatabase.WithOrigin(err))
 		return
@@ -334,7 +334,6 @@ func FinishOrder(c *gin.Context) {
 	// 返回成功响应
 	response.Success(c, nil)
 }
-
 
 // matchNearestOrder 匹配距离司机最近的订单
 func matchNearestOrder(driverLocation *DriverLocation) (*model.Order, error) {
