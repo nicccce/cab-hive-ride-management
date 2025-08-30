@@ -11,9 +11,6 @@ export default defineAppConfig({
     'pages/vehicle-add/index',
     'pages/audit-records/index',
     'pages/audit-detail/index',
-    'pages/test-ride-in-progress/index',
-    'pages/test-vehicle-card/index',
-    'pages/test-waiting-for-driver/index'
   ],
   // 配置 permission
   permission: {
