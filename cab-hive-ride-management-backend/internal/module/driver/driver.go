@@ -7,6 +7,7 @@ import (
 	"cab-hive/internal/model"
 	"cab-hive/internal/module/vehicle"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -332,18 +333,26 @@ func GetDriver(c *gin.Context) {
 	}
 
 	// 获取要查询的司机ID参数
-	DriverID := c.Param("id")
+	paramID := c.Param("id")
 
 	// 查询司机信息
 	var driver model.Driver
 	query := database.DB.Model(&model.Driver{})
 
 	// 如果没有传id参数，则查询当前用户作为司机的信息
-	if DriverID == "" {
+	if paramID == "" {
 		query = query.Where("open_id = ?", claims.OpenID)
 	} else {
-		// 如果提供了司机ID参数，则添加ID查询条件
-		query = query.Where("id = ?", DriverID)
+		// 如果提供了参数，先尝试按ID查询，如果失败则按OpenID查询
+		var id uint64
+		var err error
+		if id, err = strconv.ParseUint(paramID, 10, 32); err == nil {
+			// 参数是数字，按ID查询
+			query = query.Where("id = ?", uint(id))
+		} else {
+			// 参数不是数字，按OpenID查询
+			query = query.Where("open_id = ?", paramID)
+		}
 	}
 
 	// 执行查询
