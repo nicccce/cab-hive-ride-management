@@ -23,34 +23,34 @@ const WaitingForDriverArrive = ({ orderInfo, driverLocation }) => {
   // 路径规划线
   const [polyline, setPolyline] = useState([]);
 
-  // 更新司机位置
-  useEffect(() => {
-    if (!driverLocation) return
-    // 更新标记点，保留起点和终点，更新司机位置
-    setMarkers(prevMarkers => {
-      // 查找起点和终点标记
-      const startMarker = prevMarkers.find(marker => marker.id === 0);
-      const endMarker = prevMarkers.find(marker => marker.id === 1);
-      const driverMarker = {
-        id: 2,
-        latitude: driverLocation.latitude,
-        longitude: driverLocation.longitude,
-        title: "司机位置",
-        width: 30,
-        height: 30,
-        callout: {
-          content: "司机位置",
-          color: "#000",
-          fontSize: 14,
-          borderRadius: 4,
-          padding: 8,
-          display: "ALWAYS",
-        }
-      }
-      // 返回更新后的标记数组
-      return [startMarker, endMarker, driverMarker].filter(marker => marker !== undefined);
-    });
-  }, [driverLocation])
+  // // 更新司机位置
+  // useEffect(() => {
+  //   if (!driverLocation) return
+  //   // 更新标记点，保留起点和终点，更新司机位置
+  //   setMarkers(prevMarkers => {
+  //     // 查找起点和终点标记
+  //     const startMarker = prevMarkers.find(marker => marker.id === 0);
+  //     const endMarker = prevMarkers.find(marker => marker.id === 1);
+  //     const driverMarker = {
+  //       id: 2,
+  //       latitude: driverLocation.latitude,
+  //       longitude: driverLocation.longitude,
+  //       title: "司机位置",
+  //       width: 30,
+  //       height: 30,
+  //       callout: {
+  //         content: "司机位置",
+  //         color: "#000",
+  //         fontSize: 14,
+  //         borderRadius: 4,
+  //         padding: 8,
+  //         display: "ALWAYS",
+  //       }
+  //     }
+  //     // 返回更新后的标记数组
+  //     return [startMarker, endMarker, driverMarker].filter(marker => marker !== undefined);
+  //   });
+  // }, [driverLocation])
 
   // 更新地图标记
   useEffect(() => {
@@ -92,8 +92,29 @@ const WaitingForDriverArrive = ({ orderInfo, driverLocation }) => {
       },
     };
 
+    let driverMarker = null
+    if (driverLocation) {
+      driverMarker = {
+        id: 2,
+        latitude: driverLocation.latitude,
+        longitude: driverLocation.longitude,
+        title: "司机位置",
+        width: 30,
+        height: 30,
+        callout: {
+          content: "司机位置",
+          color: "#000",
+          fontSize: 14,
+          borderRadius: 4,
+          padding: 8,
+          display: "ALWAYS",
+        }
+      }
+
+    }
+
     // 设置初始标记点
-    setMarkers([startMarker, endMarker]);
+    setMarkers(driverMarker ? [startMarker, endMarker, driverMarker] : [startMarker, endMarker]);
 
     // 设置地图中心点
     setMapConfig((prev) => ({
@@ -142,7 +163,7 @@ const WaitingForDriverArrive = ({ orderInfo, driverLocation }) => {
       }
     }
 
-  }, [orderInfo]);
+  }, [orderInfo, driverLocation]);
 
   if (!orderInfo) {
     return (
