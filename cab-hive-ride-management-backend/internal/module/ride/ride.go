@@ -429,83 +429,6 @@ func GetOrderUserPhoneLastDigits(c *gin.Context) {
 		response.Fail(c, response.ErrDatabase.WithOrigin(err))
 		return
 	}
-	
-	// VerifyPhoneAndStartOrderRequest 定义验证手机尾号并开始订单的请求结构体
-	type VerifyPhoneAndStartOrderRequest struct {
-		PhoneLastDigits string `json:"phone_last_digits" binding:"required"` // 用户手机尾号后四位
-	}
-	
-	// VerifyPhoneAndStartOrder 处理司机验证手机尾号并开始订单的请求
-	// 该接口带有四位手机尾号，如果正确将司机名下的未完结订单的状态改为进行中OrderStatusInProgress
-	func VerifyPhoneAndStartOrder(c *gin.Context) {
-		// 从上下文中获取载荷
-		payloadInterface, exists := c.Get("payload")
-		if !exists {
-			response.Fail(c, response.ErrTokenInvalid)
-			return
-		}
-	
-		payload, ok := payloadInterface.(*jwt.Claims)
-		if !ok {
-			response.Fail(c, response.ErrTokenInvalid)
-			return
-		}
-	
-		// 检查用户角色是否为司机
-		if payload.RoleID != 2 {
-			response.Fail(c, response.ErrUnauthorized)
-			return
-		}
-	
-		// 解析请求参数
-		var req VerifyPhoneAndStartOrderRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			response.Fail(c, response.ErrInvalidRequest.WithOrigin(err))
-			return
-		}
-	
-		// 获取司机未完成的订单
-		activeOrder, err := getDriverActiveOrder(payload.OpenID)
-		if err != nil {
-			response.Fail(c, response.ErrDatabase.WithOrigin(err))
-			return
-		}
-	
-		// 如果没有未完成的订单，返回错误
-		if activeOrder == nil {
-			response.Fail(c, response.ErrNotFound.WithTips("没有未完成的订单"))
-			return
-		}
-	
-		// 根据需求说明，由于没有做用户的手机号功能，所以对于手机尾号默认是8932
-		// 验证手机尾号是否正确（应该是"32"）
-		if req.PhoneLastDigits != "32" {
-			response.Fail(c, response.ErrInvalidRequest.WithTips("手机尾号验证失败"))
-			return
-		}
-	
-		// 更新订单状态为进行中
-		activeOrder.Status = model.OrderStatusInProgress
-		if err := database.DB.Model(&model.Order{}).Where("id = ?", activeOrder.ID).Update("status", model.OrderStatusInProgress).Error; err != nil {
-			response.Fail(c, response.ErrDatabase.WithOrigin(err))
-			return
-		}
-	
-		// 更新Redis中的订单状态
-		// 先从旧状态集合中移除
-		if err := order.RemoveOrderFromRedis(activeOrder.ID, activeOrder.Status); err != nil {
-			log.Error("从Redis移除订单失败", "error", err, "order_id", activeOrder.ID)
-		}
-		// 更新订单对象的状态
-		activeOrder.Status = model.OrderStatusInProgress
-		// 再添加到新状态集合中
-		if err := order.AddOrderToRedisStatusSet(activeOrder); err != nil {
-			log.Error("添加订单到Redis失败", "error", err, "order_id", activeOrder.ID)
-		}
-	
-		// 返回成功响应
-		response.Success(c, nil)
-	}
 
 	// 如果没有未完成的订单，返回错误
 	if activeOrder == nil {
@@ -515,7 +438,7 @@ func GetOrderUserPhoneLastDigits(c *gin.Context) {
 
 	// 根据需求说明，由于没有做用户的手机号功能，所以对于手机尾号默认是8932
 	// 返回手机尾号倒数第4第3位，即"32"
-	phoneLastDigits := "32"
+	phoneLastDigits := "89"
 
 	// 构造响应数据
 	resp := PhoneLastDigitsResponse{
@@ -524,4 +447,81 @@ func GetOrderUserPhoneLastDigits(c *gin.Context) {
 
 	// 返回成功响应
 	response.Success(c, resp)
+}
+
+// VerifyPhoneAndStartOrderRequest 定义验证手机尾号并开始订单的请求结构体
+type VerifyPhoneAndStartOrderRequest struct {
+	PhoneLastDigits string `json:"phone_last_digits" binding:"required"` // 用户手机尾号后四位
+}
+
+// VerifyPhoneAndStartOrder 处理司机验证手机尾号并开始订单的请求
+// 该接口带有四位手机尾号，如果正确将司机名下的未完结订单的状态改为进行中OrderStatusInProgress
+func VerifyPhoneAndStartOrder(c *gin.Context) {
+	// 从上下文中获取载荷
+	payloadInterface, exists := c.Get("payload")
+	if !exists {
+		response.Fail(c, response.ErrTokenInvalid)
+		return
+	}
+
+	payload, ok := payloadInterface.(*jwt.Claims)
+	if !ok {
+		response.Fail(c, response.ErrTokenInvalid)
+		return
+	}
+
+	// 检查用户角色是否为司机
+	if payload.RoleID != 2 {
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 解析请求参数
+	var req VerifyPhoneAndStartOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.ErrInvalidRequest.WithOrigin(err))
+		return
+	}
+
+	// 获取司机未完成的订单
+	activeOrder, err := getDriverActiveOrder(payload.OpenID)
+	if err != nil {
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 如果没有未完成的订单，返回错误
+	if activeOrder == nil {
+		response.Fail(c, response.ErrNotFound.WithTips("没有未完成的订单"))
+		return
+	}
+
+	// 根据需求说明，由于没有做用户的手机号功能，所以对于手机尾号默认是8932
+	// 验证手机尾号是否正确（应该是"32"）
+	if req.PhoneLastDigits != "32" {
+		response.Fail(c, response.ErrInvalidRequest.WithTips("手机尾号验证失败"))
+		return
+	}
+
+	// 更新订单状态为进行中
+	activeOrder.Status = model.OrderStatusInProgress
+	if err := database.DB.Model(&model.Order{}).Where("id = ?", activeOrder.ID).Update("status", model.OrderStatusInProgress).Error; err != nil {
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 更新Redis中的订单状态
+	// 先从旧状态集合中移除
+	if err := order.RemoveOrderFromRedis(activeOrder.ID, activeOrder.Status); err != nil {
+		log.Error("从Redis移除订单失败", "error", err, "order_id", activeOrder.ID)
+	}
+	// 更新订单对象的状态
+	activeOrder.Status = model.OrderStatusInProgress
+	// 再添加到新状态集合中
+	if err := order.AddOrderToRedisStatusSet(activeOrder); err != nil {
+		log.Error("添加订单到Redis失败", "error", err, "order_id", activeOrder.ID)
+	}
+
+	// 返回成功响应
+	response.Success(c, nil)
 }
