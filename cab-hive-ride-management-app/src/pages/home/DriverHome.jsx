@@ -62,7 +62,6 @@ const DriverHome = () => {
         setAvailableOrder(null);
       }
     } catch (error) {
-      console.error("请求订单失败:", error);
       // 请求失败时也清空当前订单
       setAvailableOrder(null);
     }

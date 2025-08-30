@@ -374,3 +374,29 @@ export const uploadDriverLocation = async (location) => {
     throw error;
   }
 };
+
+/**
+ * 获取司机位置
+ * @param {string} driverId 司机ID
+ * @returns {Promise<Object>} 司机位置信息
+ */
+export const getDriverLocation = async (driverId) => {
+  if (!driverId) {
+    throw new Error('司机ID不能为空');
+  }
+  
+  try {
+    const request = (await import('../utils/request')).default;
+    const { API_ENDPOINTS } = await import('../config/api');
+    
+    const result = await request({
+      url: `${API_ENDPOINTS.DRIVER_LOCATION}/${driverId}`,
+      method: 'GET'
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('获取司机位置失败:', error);
+    throw error;
+  }
+};
