@@ -3,19 +3,6 @@ import { useEffect, useState } from "react";
 import RideInProgress from "../../components/RideInProgress";
 import "./index.scss";
 
-// 计算两点间距离的辅助函数（简化版）
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // 地球半径（公里）
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-};
-
 const TestRideInProgress = () => {
   const [orderInfo, setOrderInfo] = useState(null);
   const [driverLocation, setDriverLocation] = useState(null);
@@ -48,22 +35,29 @@ const TestRideInProgress = () => {
 
     setOrderInfo(mockOrderInfo);
 
-    // 模拟司机位置更新
+    // 模拟司机位置更新，沿着路线移动
+    let currentIndex = 0;
+    const routePoints = mockOrderInfo.route_points;
+    
     const updateDriverLocation = () => {
-      // 模拟司机在路线上移动
-      const routePoints = mockOrderInfo.route_points;
-      const randomIndex = Math.floor(Math.random() * routePoints.length);
-      const point = routePoints[randomIndex];
-      
-      const newLocation = {
-        latitude: point.latitude + (Math.random() - 0.5) * 0.001,
-        longitude: point.longitude + (Math.random() - 0.5) * 0.001
-      };
-      setDriverLocation(newLocation);
+      if (currentIndex < routePoints.length) {
+        const point = routePoints[currentIndex];
+        
+        const newLocation = {
+          latitude: point.latitude + (Math.random() - 0.5) * 0.001,
+          longitude: point.longitude + (Math.random() - 0.5) * 0.001
+        };
+        
+        setDriverLocation(newLocation);
+        currentIndex++;
+      } else {
+        // 重置到起点
+        currentIndex = 0;
+      }
     };
 
     updateDriverLocation();
-    const interval = setInterval(updateDriverLocation, 5000);
+    const interval = setInterval(updateDriverLocation, 3000);
 
     return () => clearInterval(interval);
   }, []);

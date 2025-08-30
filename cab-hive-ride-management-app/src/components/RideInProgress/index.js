@@ -3,6 +3,19 @@ import { useEffect, useState } from "react";
 import "./index.scss";
 import { OrderStatus } from "../../services/order";
 
+// 计算两点间距离的辅助函数（简化版）
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // 地球半径（公里）
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
+
 const RideInProgress = ({ orderInfo, driverLocation }) => {
   // 地图初始配置
   const [mapConfig, setMapConfig] = useState({
@@ -139,16 +152,35 @@ const RideInProgress = ({ orderInfo, driverLocation }) => {
 
   // 计算进度
   useEffect(() => {
-    if (!driverLocation || !orderInfo) return;
+    if (!driverLocation || !orderInfo || !orderInfo.start_location || !orderInfo.end_location) return;
     
-    // 这里应该根据实际的地理位置计算距离比例
-    // 为了简化，我们使用一个模拟的进度值
-    // 在实际应用中，你需要使用地理计算库来计算实际距离
-    const simulatedProgress = Math.min(100, Math.max(0, 
-      100 * (Math.random() * 0.02 + 0.98) // 模拟进度逐渐增加
-    ));
+    // 计算司机到起点的距离
+    const driverToStart = calculateDistance(
+      driverLocation.latitude,
+      driverLocation.longitude,
+      orderInfo.start_location.latitude,
+      orderInfo.start_location.longitude
+    );
     
-    setProgress(simulatedProgress);
+    // 计算司机到终点的距离
+    const driverToEnd = calculateDistance(
+      driverLocation.latitude,
+      driverLocation.longitude,
+      orderInfo.end_location.latitude,
+      orderInfo.end_location.longitude
+    );
+    
+    // 计算总距离（起点到终点）
+    const totalDistance = driverToStart + driverToEnd;
+    
+    // 计算进度百分比
+    // 进度 = (总距离 - 司机到终点距离) / 总距离 * 100
+    const progressPercent = totalDistance > 0 ? ((totalDistance - driverToEnd) / totalDistance) * 100 : 0;
+    
+    // 限制进度在0-100之间
+    const clampedProgress = Math.min(100, Math.max(0, progressPercent));
+    
+    setProgress(clampedProgress);
   }, [driverLocation, orderInfo]);
 
   // 处理反馈按钮点击
