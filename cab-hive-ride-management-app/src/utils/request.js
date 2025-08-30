@@ -33,6 +33,7 @@ const request = async (options) => {
     if (statusCode === 200) {
       if (responseData.code === RESPONSE_CODES.SUCCESS) {
         return {
+          code: responseData.code,
           success: true,
           data: responseData.data,
           message: responseData.msg

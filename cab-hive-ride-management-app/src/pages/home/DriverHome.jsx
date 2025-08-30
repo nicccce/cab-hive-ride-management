@@ -21,6 +21,8 @@ const DriverHome = () => {
   const [unfinishedOrder, setUnfinishedOrder] = useState(null);
   // 司机可接订单
   const [availableOrder, setAvailableOrder] = useState(null);
+  // 用户当前位置状态
+  const [userLocation, setUserLocation] = useState(null);
   // 订单轮询定时器引用
   const orderPollingTimerRef = useRef(null);
   // 后台任务定时器引用（位置上传等）
@@ -50,7 +52,10 @@ const DriverHome = () => {
   const getAvailableOrder = async () => {
     try {
       const response = await requestOrder();
+      console.log("请求订单响应:", response);
       if (response.code === 200 && response.data) {
+        // 如果有订单，更新当前订单状态
+        console.log("请求到新订单:", response.data);
         setAvailableOrder(response.data);
       } else {
         // 如果没有订单，清空当前订单
@@ -86,6 +91,7 @@ const DriverHome = () => {
   const uploadLocation = async () => {
     try {
       const location = await getCurrentLocation();
+      setUserLocation(location);
       await uploadDriverLocation(location);
       console.log("位置上传成功:", location);
     } catch (error) {
@@ -208,7 +214,6 @@ const DriverHome = () => {
       setSelectedVehicle(vehicle);
       console.log("选择的车辆信息:", vehicle);
       setIsWorking(true);
-      console.log("isWorking", isWorking);
 
       Taro.showToast({
         title: "开始接单",
@@ -252,6 +257,7 @@ const DriverHome = () => {
             onStopWork={stopWork}
             fetchVehicles={fetchVehicles}
             availableOrder={availableOrder}
+            userLocation={userLocation}
           />
         ) : (
           (() => {
