@@ -86,7 +86,11 @@ func RequestOrder(c *gin.Context) {
 	// 从Redis中匹配最近的订单
 	matchedOrder, err := matchNearestOrder(driverLocation)
 	if err != nil {
-		response.Fail(c, response.ErrNotFound.WithTips("没有可接的订单"))
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+	if matchedOrder == nil {
+		response.Success(c, nil)
 		return
 	}
 
@@ -256,7 +260,7 @@ func matchNearestOrder(driverLocation *DriverLocation) (*model.Order, error) {
 
 	// 如果没有等待接单的订单，返回错误
 	if len(orderIDs) == 0 {
-		return nil, errors.New("没有等待接单的订单")
+		return nil, nil
 	}
 
 	// 查找最近的订单

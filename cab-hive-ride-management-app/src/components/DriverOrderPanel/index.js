@@ -265,7 +265,7 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
         <View className="order-details">
           {/* 起点和终点在同一行 */}
           <View className="order-route-row">
-            <Text className="order-detail-value">{availableOrder.start_location?.name || '用户当前位置'}</Text>
+            <Text className="order-detail-value">{availableOrder.start_location.name === '当前位置' ? '用户当前位置' : availableOrder.start_location.name}</Text>
             <Text className="arrow-icon">→</Text>
             <Text className="order-detail-value">{availableOrder.end_location?.name || '未知地点'}</Text>
           </View>
