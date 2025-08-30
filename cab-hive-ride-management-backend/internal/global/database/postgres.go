@@ -22,6 +22,7 @@ var autoMigrateModels = []interface{}{
 	&model.Vehicle{},
 	&model.VehicleReview{},
 	&model.Order{}, // 订单模型
+	&model.Feedback{}, // 反馈模型
 }
 
 func Init() {
