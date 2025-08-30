@@ -8,6 +8,7 @@ import { getDriverLocation } from "../../services/location";
 import WaitingForDriverArrive from "../../components/WaitingForDriverArrive";
 import { getDriverInfo } from "../../services/driver";
 import { getVehicleDetail } from "../../services/vehicle";
+import RideInProgress from "../../components/RideInProgress";
 
 const PassengerHome = () => {
   // 定时器引用
@@ -193,7 +194,7 @@ const PassengerHome = () => {
                 />
               );
             case OrderStatus.InProgress:
-              return <View>行程进行中</View>;
+              return <RideInProgress orderInfo={unfinishedOrder} driverLocation={driverLocation} />;
             case OrderStatus.WaitingForPayment:
               // 这个状态已经在定时器中处理了跳转，这里可以显示一个简单的信息
               return <View>等待支付响应</View>;
