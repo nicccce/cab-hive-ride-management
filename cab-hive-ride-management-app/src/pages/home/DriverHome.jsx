@@ -138,7 +138,6 @@ const DriverHome = () => {
     if (backgroundTaskTimerRef.current) {
       clearInterval(backgroundTaskTimerRef.current);
     }
-
     // 设置新的定时器，每30秒执行一次后台任务
     backgroundTaskTimerRef.current = setInterval(async () => {
       await backgroundTasks();
@@ -239,7 +238,6 @@ const DriverHome = () => {
   };
 
   useEffect(() => {
-    startBackgroundTasks();
     startOrderPolling();
   }, [isWorking, unfinishedOrder]);
 
