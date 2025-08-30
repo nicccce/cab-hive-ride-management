@@ -38,7 +38,11 @@ const DriverHome = () => {
         setUnfinishedOrder(null);
       } else {
         setUnfinishedOrder(res.data);
-        setSelectedVehicle(res.data.vehicle_id);
+        // 根据 vehicle_id 查找完整车辆信息
+        const vehicle = vehicles.find((v) => v.id === res.data.vehicle_id);
+        if (vehicle) {
+          setSelectedVehicle(vehicle);
+        }
         setIsWorking(true);
       }
     } catch (error) {
@@ -264,7 +268,12 @@ const DriverHome = () => {
             );
             switch (unfinishedOrder.status) {
               case OrderStatus.WaitingForPickup:
-                return <DriverEnRouteToPickup unfinishedOrder={unfinishedOrder} driverLocation={userLocation} />;
+                return (
+                  <DriverEnRouteToPickup
+                    unfinishedOrder={unfinishedOrder}
+                    driverLocation={userLocation}
+                  />
+                );
               case OrderStatus.DriverArrived:
                 return <View>司机已到达，等待上车</View>;
               case OrderStatus.InProgress:
