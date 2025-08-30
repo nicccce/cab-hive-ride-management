@@ -179,7 +179,7 @@ const DriverEnRouteToPickup = ({ unfinishedOrder, driverLocation }) => {
                     <View className="order-info-container">
                         {/* 订单信息 */}
                         <View className="order-info">
-                            <Text className="order-status">前往接乘客</Text>
+                            <Text className="order-status">前往出发点接乘客</Text>
                         </View>
 
                         {/* 订单详情 */}

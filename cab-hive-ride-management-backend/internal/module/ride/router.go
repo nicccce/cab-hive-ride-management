@@ -24,6 +24,10 @@ func (m *ModuleRide) InitRouter(r *gin.RouterGroup) {
 		rideGroup.GET("/order/request", RequestOrder)
 		// 司机接单
 		rideGroup.POST("/order/take", TakeOrder)
+		// 获取订单用户手机尾号
+		rideGroup.GET("/order/phone-digits", GetOrderUserPhoneLastDigits)
+		// 验证手机尾号并开始订单
+		rideGroup.POST("/order/verify-phone-start", VerifyPhoneAndStartOrder)
 	}
 	
 	// 获取司机位置 - 需要用户认证（信息公开）
