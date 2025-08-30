@@ -251,6 +251,91 @@ func TakeOrder(c *gin.Context) {
 	response.Success(c, nil)
 }
 
+// FinishOrder 处理司机结束订单的请求
+// 该接口不需要传参，根据司机信息找到未完结订单，
+// 计算司机位置和订单终点的距离，要在500米以内，否则拒绝结束订单。
+// 结束订单后，把订单状态改为待支付，并从Redis中移除。
+func FinishOrder(c *gin.Context) {
+	// 从上下文中获取载荷
+	payloadInterface, exists := c.Get("payload")
+	if !exists {
+		response.Fail(c, response.ErrTokenInvalid)
+		return
+	}
+
+	payload, ok := payloadInterface.(*jwt.Claims)
+	if !ok {
+		response.Fail(c, response.ErrTokenInvalid)
+		return
+	}
+
+	// 检查用户角色是否为司机
+	if payload.RoleID != 2 {
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 获取司机未完成的订单（进行中的订单）
+	activeOrder, err := getDriverActiveOrder(payload.OpenID)
+	if err != nil {
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 如果没有未完成的订单，返回错误
+	if activeOrder == nil {
+		response.Fail(c, response.ErrNotFound.WithTips("没有未完成的订单"))
+		return
+	}
+
+	// 检查订单状态是否为进行中
+	if activeOrder.Status != model.OrderStatusInProgress {
+		response.Fail(c, response.ErrInvalidRequest.WithTips("订单状态不是进行中，无法结束订单"))
+		return
+	}
+
+	// 从Redis中获取司机位置信息
+	driverLocation, err := getDriverLocation(payload.OpenID)
+	if err != nil {
+		response.Fail(c, response.ErrNotFound.WithTips("未找到司机位置信息"))
+		return
+	}
+
+	// 计算司机位置和订单终点的距离
+	distance := calculateDistance(
+		driverLocation.Latitude, driverLocation.Longitude,
+		activeOrder.EndLocation.Latitude, activeOrder.EndLocation.Longitude)
+
+	// 距离要在500米以内（0.5公里），否则拒绝结束订单
+	if distance > 0.5 {
+		response.Fail(c, response.ErrInvalidRequest.WithTips(fmt.Sprintf("距离订单终点%.2f公里，超过500米限制，无法结束订单", distance)))
+		return
+	}
+
+	// 更新订单状态为待支付
+	now := time.Now()
+	activeOrder.Status = model.OrderStatusWaitingForPayment
+	activeOrder.EndTime = &now
+	
+	// 保存订单到数据库
+	if err := database.DB.Model(&model.Order{}).Where("id = ?", activeOrder.ID).Updates(map[string]interface{}{
+		"status":    model.OrderStatusWaitingForPayment,
+		"end_time":  now,
+	}).Error; err != nil {
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 从Redis中移除订单
+	if err := order.RemoveOrderFromRedis(activeOrder.ID, model.OrderStatusInProgress); err != nil {
+		log.Error("从Redis移除订单失败", "error", err, "order_id", activeOrder.ID)
+	}
+
+	// 返回成功响应
+	response.Success(c, nil)
+}
+
+
 // matchNearestOrder 匹配距离司机最近的订单
 func matchNearestOrder(driverLocation *DriverLocation) (*model.Order, error) {
 	// 从Redis中获取等待司机接单的订单集合
