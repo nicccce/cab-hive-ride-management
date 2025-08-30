@@ -6,6 +6,7 @@ import (
 	"cab-hive/internal/global/redis"
 	"cab-hive/internal/global/response"
 	"cab-hive/internal/model"
+	"cab-hive/internal/module/order"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -81,20 +82,51 @@ func UploadLocation(c *gin.Context) {
 		log.Error("查询司机进行中订单时出错", "error", err)
 		// 即使出错也继续执行，因为位置上传本身是成功的
 	} else if activeOrder != nil {
-		// 计算司机当前位置与订单路线点的最短距离
-		distance := calculateDistanceToRoutePoints(
-			req.Latitude, req.Longitude,
-			activeOrder.RoutePoints)
+		// 检查订单状态
+		if activeOrder.Status == model.OrderStatusWaitingForPickup {
+			// 如果订单状态是等待司机到达起点，则检查司机是否接近起点
+			distance := calculateDistance(
+				req.Latitude, req.Longitude,
+				activeOrder.StartLocation.Latitude, activeOrder.StartLocation.Longitude)
 
-		// 设置距离阈值（单位：公里）
-		const distanceThreshold = 50.0 // 50公里阈值
+			// 设置距离阈值（单位：公里），20米 = 0.02公里
+			const distanceThreshold = 0.02 // 20米阈值
 
-		// 如果距离超过阈值，则报警
-		if distance > distanceThreshold {
-			log.Warn("警告：司机当前位置距离订单路线过远",
-				"driver_open_id", payload.OpenID,
-				"distance", fmt.Sprintf("%.2f公里", distance),
-				"threshold", fmt.Sprintf("%.2f公里", distanceThreshold))
+			// 如果距离小于阈值，则记录日志并更新订单状态
+			if distance <= distanceThreshold {
+				// 更新订单状态为司机已到达
+				activeOrder.Status = model.OrderStatusDriverArrived
+				if err := database.DB.Model(&model.Order{}).Where("id = ?", activeOrder.ID).Update("status", model.OrderStatusDriverArrived).Error; err != nil {
+					log.Error("更新订单状态失败", "error", err, "order_id", activeOrder.ID)
+				} else {
+					// 更新Redis中的订单状态
+					// 先从旧状态集合中移除
+					if err := order.RemoveOrderFromRedis(activeOrder.ID, model.OrderStatusWaitingForPickup); err != nil {
+						log.Error("从Redis移除订单失败", "error", err, "order_id", activeOrder.ID)
+					}
+					// 再添加到新状态集合中
+					if err := order.AddOrderToRedisStatusSet(activeOrder); err != nil {
+						log.Error("添加订单到Redis失败", "error", err, "order_id", activeOrder.ID)
+					}
+				}
+			}
+		} else {
+			// 否则进行原来的司机偏离路线的检测
+			// 计算司机当前位置与订单路线点的最短距离
+			distance := calculateDistanceToRoutePoints(
+				req.Latitude, req.Longitude,
+				activeOrder.RoutePoints)
+
+			// 设置距离阈值（单位：公里）
+			const distanceThreshold = 50.0 // 50公里阈值
+
+			// 如果距离超过阈值，则报警
+			if distance > distanceThreshold {
+				log.Warn("警告：司机当前位置距离订单路线过远",
+					"driver_open_id", payload.OpenID,
+					"distance", fmt.Sprintf("%.2f公里", distance),
+					"threshold", fmt.Sprintf("%.2f公里", distanceThreshold))
+			}
 		}
 	}
 
