@@ -10,11 +10,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 	"math"
+	"time"
 )
 
 // RequestOrderResponse 定义请求订单的响应结构
@@ -64,13 +64,15 @@ func RequestOrder(c *gin.Context) {
 	// 检查司机是否有未完成的订单
 	unfinishedOrder, err := getDriverActiveOrder(payload.OpenID)
 
+	// 如果是数据库错误，返回错误响应
+	if err != nil {
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
 	// 如果找到了未完成的订单，拒绝请求新订单
 	if unfinishedOrder != nil {
 		response.Fail(c, response.ErrInvalidRequest.WithTips("司机有未完成的订单，无法请求新订单"))
-		return
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		// 如果是其他数据库错误，返回错误响应
-		response.Fail(c, response.ErrDatabase.WithOrigin(err))
 		return
 	}
 
@@ -169,13 +171,15 @@ func TakeOrder(c *gin.Context) {
 	// 检查司机是否有未完成的订单
 	unfinishedOrder, err := getDriverActiveOrder(payload.OpenID)
 
+	// 如果是数据库错误，返回错误响应
+	if err != nil {
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
 	// 如果找到了未完成的订单，拒绝请求新订单
 	if unfinishedOrder != nil {
 		response.Fail(c, response.ErrInvalidRequest.WithTips("司机有未完成的订单，无法请求新订单"))
-		return
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		// 如果是其他数据库错误，返回错误响应
-		response.Fail(c, response.ErrDatabase.WithOrigin(err))
 		return
 	}
 
