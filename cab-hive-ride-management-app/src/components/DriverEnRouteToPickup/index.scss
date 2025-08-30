@@ -1,0 +1,150 @@
+.page-content {
+  padding: 0;
+  height: 100vh; /* 使用固定高度而不是最小高度 */
+  display: flex;
+  flex-direction: column;
+}
+
+.map-container {
+  width: 100%;
+  flex: 1; /* 使用flex-grow来占据剩余空间 */
+}
+
+.ride-info-container {
+  position: absolute;
+  bottom: 20px;
+  left: 15px;
+  right: 15px;
+  z-index: 10;
+}
+
+// 信息和按钮的容器
+.order-info-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 15px;
+}
+
+// 订单信息
+.order-info {
+  text-align: center;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.order-status {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1ecd86;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.passenger-info {
+  text-align: center;
+}
+
+.passenger-name {
+  font-size: 16px;
+  color: #333;
+}
+
+// 订单详情
+.order-details {
+  margin-bottom: 15px;
+}
+
+// 路线信息容器
+.route-info {
+  flex: 1;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+// 路线详情
+.route-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+// 路线时间
+.route-time {
+  color: #666;
+}
+
+// 路线距离
+.route-distance {
+  color: #666;
+}
+
+// 过路费
+.route-tolls {
+  color: #ff4d4f;
+  font-weight: bold;
+}
+
+// 位置信息
+.location-info {
+  margin-top: 10px;
+}
+
+.location-item {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.location-item:last-child {
+  margin-bottom: 0;
+}
+
+.location-label {
+  font-weight: bold;
+  color: #333;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+
+.location-name {
+  font-size: 14px;
+  color: #333;
+  flex: 1;
+}
+
+.location-address {
+  font-size: 12px;
+  color: #666;
+  display: block;
+  margin-top: 2px;
+}
+
+.start-location {
+  // 可以添加起点特有的样式
+}
+
+.end-location {
+  // 可以添加终点特有的样式
+}
+
+// 导航按钮
+.navigate-button {
+  background: #1ecd86;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  width: 100%;
+  cursor: pointer;
+  
+  &:active {
+    background: #18b371;
+  }
+}

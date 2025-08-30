@@ -4,6 +4,7 @@ import Taro, { useDidHide, useDidShow } from "@tarojs/taro";
 import useAuth from "../../hooks/useAuth";
 import { getVehicleList } from "../../services/vehicle";
 import DriverOrderPanel from "../../components/DriverOrderPanel/index";
+import DriverEnRouteToPickup from "../../components/DriverEnRouteToPickup/index";
 import "./DriverHome.scss";
 import {
   getDriverUnfinishedOrder,
@@ -265,7 +266,7 @@ const DriverHome = () => {
             );
             switch (unfinishedOrder.status) {
               case OrderStatus.WaitingForPickup:
-                return <View>等待司机到达起点</View>;
+                return <DriverEnRouteToPickup unfinishedOrder={unfinishedOrder} driverLocation={userLocation} />;
               case OrderStatus.DriverArrived:
                 return <View>司机已到达，等待上车</View>;
               case OrderStatus.InProgress:
