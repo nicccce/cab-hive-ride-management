@@ -63,6 +63,23 @@ export const cancelOrder = async (orderId) => {
   })
 }
 
+// 获取订单用户手机尾号
+export const getOrderPhoneDigits = async () => {
+  return await request({
+    url: API_ENDPOINTS.ORDER_PHONE_DIGITS,
+    method: 'GET'
+  })
+}
+
+// 验证手机尾号并开始订单
+export const verifyPhoneAndStartOrder = async (params) => {
+  return await request({
+    url: API_ENDPOINTS.ORDER_VERIFY_PHONE_START,
+    method: 'POST',
+    data: params
+  })
+}
+
 // 司机请求订单
 export const requestOrder = async () => {
   return await request({

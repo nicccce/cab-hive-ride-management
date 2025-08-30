@@ -34,14 +34,16 @@ export const API_ENDPOINTS = {
   ORDER_UNFINISHED: '/api/orders/unfinished',
   ORDER_DRIVER_UNFINISHED: '/api/orders/driver/unfinished',
   ORDER_CANCEL: '/api/orders/{id}',
-  
   // 司机订单相关
   ORDER_REQUEST: '/api/rides/order/request',
   ORDER_TAKE: '/api/rides/order/take',
+  ORDER_PHONE_DIGITS: '/api/rides/order/phone-digits',
+  ORDER_VERIFY_PHONE_START: '/api/rides/order/verify-phone-start',
   
   // 司机位置相关
   DRIVER_LOCATION: '/api/rides/location',
 }
+
 
 // 角色定义
 export const USER_ROLES = {
