@@ -241,7 +241,7 @@ const DriverHome = () => {
   useEffect(() => {
     startBackgroundTasks();
     startOrderPolling();
-  }, [isWorking]);
+  }, [isWorking, unfinishedOrder]);
 
   return (
     <View className="container">

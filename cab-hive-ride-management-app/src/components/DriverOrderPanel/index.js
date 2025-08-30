@@ -4,7 +4,7 @@ import Taro from '@tarojs/taro'
 import { takeOrder } from '../../services/order'
 import './index.scss'
 
-const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleSelect, onStartWork, onStopWork, isWorking, selectedVehicle, fetchVehicles, availableOrder, userLocation }) => {
+const DriverOrderPanel = ({ vehicles: initialVehicles = [], onVehicleSelect, onStartWork, onStopWork, isWorking, selectedVehicle, fetchVehicles, availableOrder, userLocation }) => {
   const [showVehicleModal, setShowVehicleModal] = useState(false)
   const [vehicles, setVehicles] = useState(initialVehicles)
 
@@ -47,7 +47,7 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
   useEffect(
     () => {
       console.log(availableOrder)
-      if (!availableOrder) {
+      if (!availableOrder||!isWorking) {
         setPolyline([])
         setMarkers([])
       } else {
@@ -126,7 +126,7 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
         };
         setMarkers([startMarker, endMarker])
       }
-    }, [availableOrder]
+    }, [availableOrder, isWorking]
   )
 
   // 处理开始工作
@@ -358,7 +358,6 @@ const DriverOrderPanel = ({ userInfo, vehicles: initialVehicles = [], onVehicleS
 
       {renderBottomSection()}
       {renderVehicleSelectionModal()}
-      {availableOrder && renderOrderInfo()}
     </View>
   )
 }
