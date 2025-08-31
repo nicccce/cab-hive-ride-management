@@ -7,10 +7,14 @@ export default defineAppConfig({
     'pages/driver-register/index',
     'pages/driver-info/index',
     'pages/driver-edit/index',
+    'pages/driver-detail/index',
     'pages/vehicle-info/index',
     'pages/vehicle-add/index',
+    'pages/vehicle-detail/index',
     'pages/audit-records/index',
     'pages/audit-detail/index',
+    'pages/order-list/index',
+    'pages/order-detail/index',
   ],
   // 配置 permission
   permission: {

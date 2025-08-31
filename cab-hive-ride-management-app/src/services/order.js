@@ -104,3 +104,38 @@ export const finishOrder = async () => {
     method: 'POST'
   })
 }
+
+// 提交反馈
+export const submitFeedback = async (params) => {
+  return await request({
+    url: API_ENDPOINTS.FEEDBACK_SUBMIT,
+    method: 'POST',
+    data: params
+  })
+}
+
+// 获取用户所有订单列表
+export const getUserOrders = async (params = {}) => {
+  return await request({
+    url: API_ENDPOINTS.ORDER_DETAIL,
+    method: 'GET',
+    params
+  })
+}
+
+// 获取司机所有订单列表
+export const getDriverOrders = async (params = {}) => {
+  return await request({
+    url: API_ENDPOINTS.ORDER_DETAIL + '/driver',
+    method: 'GET',
+    params
+  })
+}
+
+// 获取订单详情
+export const getOrderDetailById = async (orderId) => {
+  return await request({
+    url: `${API_ENDPOINTS.ORDER_DETAIL}/${orderId}`,
+    method: 'GET'
+  })
+}

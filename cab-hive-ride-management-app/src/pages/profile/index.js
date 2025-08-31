@@ -8,7 +8,8 @@ import {
   ClockOutlined,
   Close,
   Replay,
-  ChatOutlined
+  ChatOutlined,
+  Logistics
 } from '@taroify/icons'
 import { Dialog, FloatingBubble } from '@taroify/core'
 import AiChat from '../../components/AiChat'
@@ -202,6 +203,18 @@ const Profile = () => {
 
         {/* 渲染司机管理菜单 */}
         {renderDriverMenu()}
+
+        {/* 订单管理菜单 */}
+        {isLoggedIn && (
+          <MenuSection title="订单管理">
+            <MenuItem
+              icon={<Logistics size="20" color="#3b82f6" />}
+              title="我的订单"
+              subtitle="查看历史订单和订单详情"
+              onClick={() => navigateTo('/pages/order-list/index')}
+            />
+          </MenuSection>
+        )}
 
         {/* 渲染退出登录按钮 */}
         {isLoggedIn && (

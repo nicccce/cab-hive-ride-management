@@ -31,6 +31,8 @@ const DriverHome = () => {
   const [userLocation, setUserLocation] = useState(null);
   // AI客服对话框显示状态
   const [showAiChat, setShowAiChat] = useState(false);
+  // 浮动气泡显示状态
+  const [showFloatingBubble, setShowFloatingBubble] = useState(true);
   // 订单轮询定时器引用
   const orderPollingTimerRef = useRef(null);
   // 后台任务定时器引用（位置上传等）
@@ -307,12 +309,21 @@ const DriverHome = () => {
       )}
       
       {/* 浮动气泡 */}
-      <FloatingBubble
-        axis="xy"
-        magnetic="x"
-        icon={<ChatOutlined />}
-        onClick={() => setShowAiChat(true)}
-      />
+      <View className="floating-bubble-wrapper">
+        {showFloatingBubble && (
+          <FloatingBubble
+            axis="xy"
+            magnetic="x"
+            icon={<ChatOutlined />}
+            onClick={() => setShowAiChat(true)}
+            style={{ zIndex: 9999 }}
+            onError={(error) => {
+              console.error('FloatingBubble error:', error);
+              setShowFloatingBubble(false);
+            }}
+          />
+        )}
+      </View>
     </View>
   );
 };

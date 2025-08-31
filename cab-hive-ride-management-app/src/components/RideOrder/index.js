@@ -1,5 +1,5 @@
 import { View, Map, Text, ScrollView } from "@tarojs/components";
-import { Button, Dialog } from "@taroify/core";
+import { Button, Dialog, DatetimePicker } from "@taroify/core";
 import Taro, { useDidShow, useDidHide } from "@tarojs/taro";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
@@ -41,6 +41,11 @@ const RideOrderPage = () => {
 
   const [availableRoutes, setAvailableRoutes] = useState([]);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
+  
+  // 控制DatetimePicker显示的状态
+  const [showDatetimePicker, setShowDatetimePicker] = useState(false);
+  // 存储用户选择的自定义时间
+  const [customReserveTime, setCustomReserveTime] = useState(new Date());
 
   // 获取用户当前位置
   const getCurrentLocation = async () => {
@@ -524,10 +529,119 @@ const RideOrderPage = () => {
         return;
       }
 
-      // 这里应该弹出时间选择器让用户选择预约时间
-      // 为了简化，我们使用当前时间加1小时作为示例
+      // 弹出时间选择器让用户选择预约时间
+      Taro.showActionSheet({
+        itemList: ['30分钟后', '1小时后', '2小时后', '3小时后', '自定义时间'],
+        itemColor: "#000000",
+        success: async function (res) {
+          let reserveTime;
+          const now = new Date();
+          
+          switch (res.tapIndex) {
+            case 0: // 30分钟后
+              reserveTime = new Date(now.getTime() + 30 * 60 * 1000);
+              break;
+            case 1: // 1小时后
+              reserveTime = new Date(now.getTime() + 60 * 60 * 1000);
+              break;
+            case 2: // 2小时后
+              reserveTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+              break;
+            case 3: // 3小时后
+              reserveTime = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+              break;
+            case 4: // 自定义时间
+              // 显示DatetimePicker让用户选择自定义时间
+              setShowDatetimePicker(true);
+              return; // 暂时返回，等待用户选择时间
+              break;
+            default:
+              reserveTime = new Date(now.getTime() + 60 * 60 * 1000); // 默认1小时后
+          }
+          
+          const reserveTimeString = reserveTime.toISOString().slice(0, 19).replace('T', ' ');
+
+          // 构造预约订单参数
+          const orderParams = {
+            points: availableRoutes[selectedRouteIndex].points,
+            distance: availableRoutes[selectedRouteIndex].distance,
+            duration: availableRoutes[selectedRouteIndex].duration,
+            tolls: availableRoutes[selectedRouteIndex].tolls,
+            tags: [],
+            steps: availableRoutes[selectedRouteIndex].steps,
+            startLocation: startLocation,
+            endLocation: endLocation,
+            reserveTime: reserveTimeString
+          };
+
+          console.log("创建预约订单，参数：", orderParams);
+
+          // 调用创建预约订单接口
+          const result = await createReserveOrder(orderParams);
+          console.log("预约订单创建结果：", result);
+
+          if (result.code === 200) {
+            Taro.showToast({
+              title: "预约订单创建成功",
+              icon: "success"
+            });
+            
+            // 跳转到订单页面
+            Taro.navigateTo({
+              url: `/pages/booking/index?id=${result.data.order_id}`
+            });
+          } else {
+            Taro.showToast({
+              title: result.msg || "预约订单创建失败",
+              icon: "none"
+            });
+          }
+        },
+        fail: function (err) {
+          console.log("用户取消选择时间");
+        }
+      });
+    } catch (error) {
+      console.error("创建预约订单失败：", error);
+      Taro.showToast({
+        title: "预约订单创建失败，请重试",
+        icon: "none"
+      });
+    }
+  };
+
+  // 使用用户选择的自定义时间创建预约订单
+  const createReserveOrderWithCustomTime = async (reserveTime) => {
+    try {
+      // 检查必要的参数
+      if (!startLocation || !endLocation || availableRoutes.length === 0) {
+        Dialog.alert({
+          title: "信息不完整",
+          message: "请先选择起点和终点并等待路线规划完成"
+        });
+        return;
+      }
+
+      // 验证预约时间范围
       const now = new Date();
-      const reserveTime = new Date(now.getTime() + 60 * 60 * 1000); // 1小时后
+      const oneWeekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      if (reserveTime < now) {
+        Taro.showToast({
+          title: "预约时间不能早于当前时间",
+          icon: "none"
+        });
+        return;
+      }
+
+      if (reserveTime > oneWeekLater) {
+        Taro.showToast({
+          title: "预约时间不能超过一周",
+          icon: "none"
+        });
+        return;
+      }
+
       const reserveTimeString = reserveTime.toISOString().slice(0, 19).replace('T', ' ');
 
       // 构造预约订单参数
@@ -709,6 +823,40 @@ const RideOrderPage = () => {
                 </Button>
               </Button.Group>
             </>
+          )}
+
+          {/* DatetimePicker for custom time selection */}
+          {showDatetimePicker && (
+            <View className="datetime-picker-container">
+              <DatetimePicker
+                type="datetime"
+                value={customReserveTime}
+                onChange={(value) => setCustomReserveTime(value)}
+                min={new Date()}
+                max={new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000)}
+              >
+                <DatetimePicker.Toolbar>
+                  <DatetimePicker.Button
+                    onClick={() => {
+                      setShowDatetimePicker(false);
+                      setCustomReserveTime(new Date());
+                    }}
+                  >
+                    取消
+                  </DatetimePicker.Button>
+                  <DatetimePicker.Title>选择预约时间</DatetimePicker.Title>
+                  <DatetimePicker.Button
+                    onClick={async () => {
+                      setShowDatetimePicker(false);
+                      // 使用用户选择的自定义时间创建预约订单
+                      await createReserveOrderWithCustomTime(customReserveTime);
+                    }}
+                  >
+                    确认
+                  </DatetimePicker.Button>
+                </DatetimePicker.Toolbar>
+              </DatetimePicker>
+            </View>
           )}
 
           {/* <View className="button-group">

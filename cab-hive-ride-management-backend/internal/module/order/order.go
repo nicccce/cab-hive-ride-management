@@ -144,8 +144,8 @@ func CreateImmediateOrder(c *gin.Context) {
 
 	// 检查用户是否有未完成的订单
 	var unfinishedOrder model.Order
-	err := database.DB.Where("user_open_id = ? AND status NOT IN (?, ?)",
-		payload.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
+	err := database.DB.Where("user_open_id = ? AND status NOT IN (?, ?, ?)",
+		payload.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled, model.OrderStatusReserved).
 		First(&unfinishedOrder).Error
 
 	// 如果找到了未完成的订单，拒绝创建新订单
@@ -300,9 +300,15 @@ func GetOrder(c *gin.Context) {
 	var order model.Order
 	query := database.DB.Where("id = ?", orderID)
 
-	// 如果不是管理员，只查询当前用户的订单
+	// 如果不是管理员，只查询当前用户或司机的订单
 	if claims.RoleID != 3 {
-		query = query.Where("user_open_id = ?", claims.OpenID)
+		if claims.RoleID == 2 {
+			// 司机角色，查询分配给该司机的订单
+			query = query.Where("driver_open_id = ?", claims.OpenID)
+		} else {
+			// 用户角色，查询该用户的订单
+			query = query.Where("user_open_id = ?", claims.OpenID)
+		}
 	}
 
 	if err := query.First(&order).Error; err != nil {
@@ -803,8 +809,8 @@ func CreateReserveOrder(c *gin.Context) {
 
 	// 检查用户是否有未完成的订单
 	var unfinishedOrder model.Order
-	err = database.DB.Where("user_open_id = ? AND status NOT IN (?, ?)",
-		payload.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
+	err = database.DB.Where("user_open_id = ? AND status NOT IN (?, ?, ?)",
+		payload.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled, model.OrderStatusReserved).
 		First(&unfinishedOrder).Error
 
 	// 如果找到了未完成的订单，拒绝创建新订单

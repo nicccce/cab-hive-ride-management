@@ -1,5 +1,5 @@
 // API 基础配置
-export const API_BASE_URL = 'http://121.250.214.96:8080'
+export const API_BASE_URL = 'http://10.27.216.86:8080'
 
 // 接口地址
 export const API_ENDPOINTS = {
@@ -40,10 +40,13 @@ export const API_ENDPOINTS = {
   ORDER_PHONE_DIGITS: '/api/rides/order/phone-digits',
   ORDER_VERIFY_PHONE_START: '/api/rides/order/verify-phone-start',
   ORDER_FINISH: '/api/rides/order/finish',
-  
+   
   // 司机位置相关
   DRIVER_LOCATION: '/api/rides/location',
-  
+   
+  // 反馈相关
+  FEEDBACK_SUBMIT: '/api/feedback',
+   
   // AI客服相关
   AI_CHAT: '/api/ai/chat',
 }

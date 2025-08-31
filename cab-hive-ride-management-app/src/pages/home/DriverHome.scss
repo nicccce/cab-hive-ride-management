@@ -281,3 +281,9 @@
   padding: 20px;
   color: #666;
 }
+.floating-bubble-wrapper {
+  position: fixed;
+  right: 20px;
+  bottom: 100px;
+  z-index: 9999;
+}

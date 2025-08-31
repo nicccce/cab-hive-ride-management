@@ -3,7 +3,7 @@ import { API_BASE_URL, RESPONSE_CODES } from '../config/api'
 
 // 请求拦截器
 const request = async (options) => {
-  const { url, data, method = 'GET', header = {} } = options
+  const { url, data, method = 'GET', header = {}, params } = options
   
   // 从缓存获取 token
   const token = Taro.getStorageSync('token')
@@ -19,11 +19,26 @@ const request = async (options) => {
     defaultHeader['Authorization'] = `Bearer ${token}`
   }
   
+  // 处理 URL 和参数
+  let requestUrl = `${API_BASE_URL}${url}`
+  
+  // 如果是 GET 请求且有 params 参数，则将 params 拼接到 URL 上
+  if (method === 'GET' && params) {
+    const queryString = Object.keys(params)
+      .filter(key => params[key] !== undefined && params[key] !== null && params[key] !== '')
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+      .join('&')
+    
+    if (queryString) {
+      requestUrl += (requestUrl.includes('?') ? '&' : '?') + queryString
+    }
+  }
+  
   try {
     const res = await Taro.request({
-      url: `${API_BASE_URL}${url}`,
+      url: requestUrl,
       method,
-      data,
+      data: method !== 'GET' ? data : undefined,
       header: defaultHeader
     })
     

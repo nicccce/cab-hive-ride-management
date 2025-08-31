@@ -1,0 +1,275 @@
+.container {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.search-filter-bar {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+  
+  .search-box {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    
+    // 移除旧的输入框样式，适应Cell组件
+    .taroify-cell {
+      flex: 1;
+      background-color: #f5f5f5;
+      border-radius: 20px;
+      
+      .taroify-cell__title {
+        font-size: 14px;
+        color: #666;
+      }
+      
+      .taroify-cell__value {
+        font-size: 14px;
+        color: #333;
+      }
+    }
+  }
+  
+  .filter-button {
+    display: flex;
+    align-items: center;
+    margin-left: 12px;
+    padding: 8px 12px;
+    background-color: #f5f5f5;
+    border-radius: 20px;
+    
+    text {
+      margin-left: 4px;
+      font-size: 14px;
+      color: #666;
+    }
+  }
+}
+
+.filter-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  
+  .filter-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .filter-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    padding: 20px;
+    
+    .filter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      
+      text {
+        font-size: 18px;
+        font-weight: bold;
+      }
+      
+      .close-btn {
+        font-size: 24px;
+        color: #999;
+      }
+    }
+    
+    .filter-options {
+      max-height: 50vh;
+      overflow-y: auto;
+      
+      .filter-option {
+        padding: 16px 0;
+        border-bottom: 1px solid #eee;
+        font-size: 16px;
+        
+        &.active {
+          color: #1989fa;
+          font-weight: bold;
+        }
+      }
+    }
+  }
+}
+
+.order-list {
+  padding: 16px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  
+  .order-item {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
+      
+      .order-id {
+        font-size: 14px;
+        color: #666;
+      }
+      
+      .order-status {
+        font-size: 14px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background-color: #f5f5f5;
+        
+        &.reserved {
+          color: #1989fa;
+          background-color: #e6f7ff;
+        }
+        
+        &.waiting_for_driver {
+          color: #ff976a;
+          background-color: #fff2e8;
+        }
+        
+        &.waiting_for_pickup {
+          color: #ff976a;
+          background-color: #fff2e8;
+        }
+        
+        &.driver_arrived {
+          color: #ff976a;
+          background-color: #fff2e8;
+        }
+        
+        &.in_progress {
+          color: #1989fa;
+          background-color: #e6f7ff;
+        }
+        
+        &.waiting_for_payment {
+          color: #ff976a;
+          background-color: #fff2e8;
+        }
+        
+        &.completed {
+          color: #07c160;
+          background-color: #e8fff5;
+        }
+        
+        &.cancelled {
+          color: #999;
+          background-color: #f5f5f5;
+        }
+      }
+    }
+    
+    .order-content {
+      .location-info {
+        margin-bottom: 12px;
+        
+        .location-point {
+          display: flex;
+          align-items: center;
+          margin-bottom: 8px;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+          
+          &.start-point::before {
+            content: "";
+            display: block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #1989fa;
+            margin-right: 8px;
+          }
+          
+          &.end-point::before {
+            content: "";
+            display: block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #07c160;
+            margin-right: 8px;
+          }
+          
+          .location-name {
+            font-size: 14px;
+            color: #333;
+          }
+        }
+      }
+      
+      .order-details {
+        .detail-row {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 6px;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+          
+          .detail-label {
+            font-size: 13px;
+            color: #999;
+          }
+          
+          .detail-value {
+            font-size: 13px;
+            color: #333;
+          }
+        }
+      }
+    }
+  }
+  
+  .load-more,
+  .no-more,
+  .empty-state {
+    text-align: center;
+    padding: 20px 0;
+    color: #999;
+    font-size: 14px;
+  }
+  
+  .empty-state {
+    padding: 60px 0;
+  }
+}
+
+.login-prompt {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 16px;
+  color: #666;
+}
