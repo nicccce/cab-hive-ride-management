@@ -140,7 +140,70 @@ export interface VehicleReviewListParams {
   brand?: string;
   model_name?: string;
   status?: string;
-}
+  }
+  
+  // 订单相关类型
+  export interface OrderLocation {
+    latitude: number;
+    longitude: number;
+    name?: string;
+    address?: string;
+    province?: string;
+    city?: string;
+    district?: string;
+  }
+  
+  export interface OrderRoutePoint {
+    latitude: number;
+    longitude: number;
+  }
+  
+  export interface OrderStep {
+    instruction: string;
+    polyline_idx: number[];
+    road_name: string;
+    dir_desc: string;
+    distance: number;
+    act_desc: string;
+    accessorial_desc: string;
+  }
+  
+  export interface Order {
+    id: number;
+    user_open_id: string;
+    driver_open_id: string;
+    vehicle_id: number;
+    start_location: OrderLocation;
+    end_location: OrderLocation;
+    route_points: OrderRoutePoint[];
+    start_time: string;
+    end_time: string | null;
+    distance: number;
+    duration: number;
+    fare: number;
+    tolls: number;
+    status: 'waiting_for_driver' | 'driver_arriving' | 'in_progress' | 'waiting_for_payment' | 'completed' | 'cancelled' | 'reserved';
+    payment_time: string | null;
+    comment: string;
+    cancel_reason: string;
+    rating: number;
+    reserve_time: string;
+  }
+  
+  export interface OrderListResponse {
+    orders: Order[];
+    pagination: Pagination;
+  }
+  
+  export interface OrderListParams {
+    page?: number;
+    page_size?: number;
+    status?: string;
+    user_open_id?: string;
+    driver_open_id?: string;
+    start_time?: string;
+    end_time?: string;
+  }
 // 车辆相关类型
 export interface Vehicle {
   id: string;

@@ -9,6 +9,7 @@ import DriverManagement from '../pages/DriverManagement';
 import DriverReviewPage from '../pages/DriverReview';
 import VehicleReviewPage from '../pages/VehicleReview';
 import VehicleManagement from '../pages/VehicleManagement';
+import OrderManagement from '../pages/OrderManagement';
 
 export const router = createBrowserRouter([
   {
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
       {
         path: '/vehicle-management',
         element: <VehicleManagement />,
+      },
+      {
+        path: '/order-management',
+        element: <OrderManagement />,
       },
     ],
   },

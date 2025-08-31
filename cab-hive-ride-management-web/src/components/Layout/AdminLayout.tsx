@@ -53,6 +53,11 @@ const AdminLayout: React.FC = () => {
       icon: <CarOutlined />,
       label: '车辆管理',
     },
+    {
+      key: '/order-management',
+      icon: <CarOutlined />,
+      label: '订单管理',
+    },
   ];
 
   const handleMenuClick = ({ key }: { key: string }) => {

@@ -4,6 +4,7 @@ import driverReducer from './modules/driver';
 import userReducer from './modules/user';
 import vehicleReducer from './modules/vehicle';
 import dashboardReducer from './modules/dashboard';
+import orderReducer from './modules/order';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     user: userReducer,
     vehicle: vehicleReducer,
     dashboard: dashboardReducer,
+    order: orderReducer,
   },
 });
 
