@@ -216,6 +216,12 @@ const Profile = () => {
               subtitle="查看历史订单和订单详情"
               onClick={() => navigateTo('/pages/order-list/index')}
             />
+            <MenuItem
+              icon={<ChatOutlined size="20" color="#3b82f6" />}
+              title="反馈管理"
+              subtitle="查看和管理您的反馈"
+              onClick={() => navigateTo('/pages/feedback-management/index')}
+            />
           </MenuSection>
         )}
 

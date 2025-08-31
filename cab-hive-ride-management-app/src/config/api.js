@@ -46,6 +46,8 @@ export const API_ENDPOINTS = {
    
   // 反馈相关
   FEEDBACK_SUBMIT: '/api/feedback',
+  FEEDBACK_LIST: '/api/feedback',
+  FEEDBACK_DETAIL: '/api/feedback/{id}',
    
   // AI客服相关
   AI_CHAT: '/api/ai/chat',
