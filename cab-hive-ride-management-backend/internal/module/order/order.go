@@ -300,11 +300,11 @@ func GetOrder(c *gin.Context) {
 	var order model.Order
 	query := database.DB.Where("id = ?", orderID)
 
-	// 如果不是管理员，只查询当前用户或司机的订单
+	// 如果不是管理员，查询相关订单
 	if claims.RoleID != 3 {
 		if claims.RoleID == 2 {
-			// 司机角色，查询分配给该司机的订单
-			query = query.Where("driver_open_id = ?", claims.OpenID)
+			// 司机角色，查询分配给该司机的订单或该司机作为用户创建的订单
+			query = query.Where("driver_open_id = ? OR user_open_id = ?", claims.OpenID, claims.OpenID)
 		} else {
 			// 用户角色，查询该用户的订单
 			query = query.Where("user_open_id = ?", claims.OpenID)
