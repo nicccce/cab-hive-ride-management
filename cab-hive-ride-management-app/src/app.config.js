@@ -17,6 +17,7 @@ export default defineAppConfig({
     'pages/order-detail/index',
     'pages/driver-order-list/index',
     'pages/driver-order-detail/index',
+    'pages/feedback-management/index',
   ],
   // 配置 permission
   permission: {

@@ -23,7 +23,7 @@ const Feedback = ({ orderId, onSubmit, onCancel }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       await onSubmit({
         order_id: orderId,
@@ -47,6 +47,10 @@ const Feedback = ({ orderId, onSubmit, onCancel }) => {
     setShowPicker(false);
   };
 
+  const getFeedbackLabel = () => {
+    return feedbackTypes.find(item => item.value === feedbackType)?.label || '请选择反馈类型'
+  };
+
   return (
     <View className="feedback-modal">
       <View className="feedback-modal-content">
@@ -54,7 +58,7 @@ const Feedback = ({ orderId, onSubmit, onCancel }) => {
         <View>
           <Cell.Group inset>
             <Cell title="反馈类型" arrow={<ArrowRight />} bordered={false} onClick={openPicker}>
-              {feedbackTypes.find(item => item.value === feedbackType)?.label || '请选择反馈类型'}
+              {getFeedbackLabel()}
             </Cell>
 
             <Cell title="反馈级别" bordered={false}>
@@ -112,23 +116,18 @@ const Feedback = ({ orderId, onSubmit, onCancel }) => {
 
       <Popup open={showPicker} rounded placement="bottom" onClose={closePicker}>
         <Picker
-          value={[feedbackTypes.findIndex(item => item.value === feedbackType)]}
-          onConfirm={(e) => {
-            setFeedbackType(feedbackTypes[e.detail.value[0]].value);
-            setShowPicker(false);
+          defaultValue={feedbackType}
+          columns={feedbackTypes}
+          columnsFieldNames={{ label: 'label', value: 'value' }}
+          onChange={(value) => {
+            setFeedbackType(value)
+          }}
+          onConfirm={(value) => {
+            setFeedbackType(value[0]);
+            closePicker();
           }}
           onCancel={closePicker}
-        >
-          <Picker.Columns>
-            <Picker.Column>
-              {feedbackTypes.map((item, index) => (
-                <Picker.Option key={index} value={index}>
-                  {item.label}
-                </Picker.Option>
-              ))}
-            </Picker.Column>
-          </Picker.Columns>
-        </Picker>
+        />
       </Popup>
     </View>
   );
