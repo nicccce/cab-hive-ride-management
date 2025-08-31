@@ -1,0 +1,110 @@
+.container {
+  min-height: 100vh;
+  background-color: #f9fafb;
+  padding: 16px;
+}
+
+.feedback-detail {
+  .feedback-header {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    
+    .feedback-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 16px;
+      word-wrap: break-word;
+    }
+    
+    .feedback-meta {
+      .feedback-type-status {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        
+        .feedback-type {
+          font-size: 14px;
+          color: #6b7280;
+          background-color: #f0f5ff;
+          padding: 4px 12px;
+          border-radius: 16px;
+        }
+        
+        .feedback-status {
+          font-size: 14px;
+          padding: 4px 12px;
+          border-radius: 16px;
+          
+          &.open {
+            color: #ff6b35;
+            background-color: #fff0eb;
+          }
+          
+          &.processing {
+            color: #3b82f6;
+            background-color: #e8f3ff;
+          }
+          
+          &.closed {
+            color: #6b7280;
+            background-color: #f3f4f6;
+          }
+        }
+      }
+      
+      .feedback-time {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 12px;
+        color: #9ca3af;
+      }
+    }
+  }
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 12px;
+  padding-left: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.feedback-content-section, .feedback-reply-section {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  
+  .feedback-content, .feedback-reply {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  
+  .feedback-reply {
+    color: #1f2937;
+    background-color: #f9fafb;
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 8px;
+  }
+}
+
+.loading, .empty-state, .login-prompt {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 16px;
+  color: #6b7280;
+}

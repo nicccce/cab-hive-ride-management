@@ -48,6 +48,10 @@ export const API_ENDPOINTS = {
   FEEDBACK_SUBMIT: '/api/feedback',
   FEEDBACK_LIST: '/api/feedback',
   FEEDBACK_DETAIL: '/api/feedback/{id}',
+  FEEDBACK_ADMIN_LIST: '/api/feedback/admin',
+  FEEDBACK_ADMIN_DETAIL: '/api/feedback/admin/{id}',
+  FEEDBACK_ADMIN_REPLY: '/api/feedback/admin/{id}/reply',
+  FEEDBACK_ADMIN_STATUS: '/api/feedback/admin/{id}/status',
    
   // AI客服相关
   AI_CHAT: '/api/ai/chat',
