@@ -140,3 +140,11 @@ alipay:
    
    # 是否生产环境(true/false)
    is_production: true
+
+# OpenAI 配置
+openai:
+  # OpenAI API Key
+  api_key: "your_openai_api_key"
+  
+  # 使用的模型
+  model: "gpt-3.5-turbo"

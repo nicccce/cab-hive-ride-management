@@ -19,6 +19,7 @@ type Config struct {
 	WeChat   WeChat `yaml:"wechat"`
 	OSS      OSS    `yaml:"oss"`
 	AliPay   AliPay `yaml:"alipay"`
+	OpenAI   OpenAI `yaml:"openai"`
 }
 
 // OSS 配置
@@ -72,4 +73,10 @@ type AliPay struct {
 	ServerURL    string `yaml:"server_url" mapstructure:"server_url"`
 	SellerID     string `yaml:"seller_id" mapstructure:"seller_id"`
 	IsProduction bool   `yaml:"is_production" mapstructure:"is_production"`
+}
+
+// OpenAI 配置
+type OpenAI struct {
+	APIKey string `envconfig:"OPENAI_API_KEY" yaml:"api_key" mapstructure:"api_key"`
+	Model  string `envconfig:"OPENAI_MODEL" yaml:"model" mapstructure:"model"`
 }
