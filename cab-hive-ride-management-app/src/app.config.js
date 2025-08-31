@@ -15,6 +15,8 @@ export default defineAppConfig({
     'pages/audit-detail/index',
     'pages/order-list/index',
     'pages/order-detail/index',
+    'pages/driver-order-list/index',
+    'pages/driver-order-detail/index',
   ],
   // 配置 permission
   permission: {

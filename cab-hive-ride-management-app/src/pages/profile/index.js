@@ -153,6 +153,12 @@ const Profile = () => {
             onClick={() => navigateTo('/pages/vehicle-info/index')}
           />
           <MenuItem
+            icon={<Logistics size="20" color="#3b82f6" />}
+            title="司机订单管理"
+            subtitle="查看和管理司机订单"
+            onClick={() => navigateTo('/pages/driver-order-list/index')}
+          />
+          <MenuItem
             icon={<ClockOutlined size="20" color="#f59e0b" />}
             title="审核记录"
             subtitle="查看司机和车辆审核记录"
@@ -201,9 +207,6 @@ const Profile = () => {
           onEditProfile={handleProfileClick}
         />
 
-        {/* 渲染司机管理菜单 */}
-        {renderDriverMenu()}
-
         {/* 订单管理菜单 */}
         {isLoggedIn && (
           <MenuSection title="订单管理">
@@ -215,6 +218,9 @@ const Profile = () => {
             />
           </MenuSection>
         )}
+
+        {/* 渲染司机管理菜单 */}
+        {renderDriverMenu()}
 
         {/* 渲染退出登录按钮 */}
         {isLoggedIn && (
