@@ -77,6 +77,7 @@ type AliPay struct {
 
 // OpenAI 配置
 type OpenAI struct {
-	APIKey string `envconfig:"OPENAI_API_KEY" yaml:"api_key" mapstructure:"api_key"`
-	Model  string `envconfig:"OPENAI_MODEL" yaml:"model" mapstructure:"model"`
+	APIKey  string `envconfig:"OPENAI_API_KEY" yaml:"api_key" mapstructure:"api_key"`
+	Model   string `envconfig:"OPENAI_MODEL" yaml:"model" mapstructure:"model"`
+	BaseUrl string `envconfig:"OPENAI_BASE_URL" yaml:"base_url" mapstructure:"base_url"`
 }

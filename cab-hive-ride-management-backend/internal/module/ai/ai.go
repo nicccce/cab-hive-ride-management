@@ -4,10 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"cab-hive/config"
-	"cab-hive/internal/global/httpclient"
 	"cab-hive/internal/global/jwt"
 	"cab-hive/internal/global/response"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -103,7 +101,7 @@ func ChatWithAI(c *gin.Context) {
 	}
 
 	// 创建HTTP请求
-	request, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonData))
+	request, err := http.NewRequest("POST", config.Get().OpenAI.BaseUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Error("创建OpenAI请求失败", "error", err)
 		response.Fail(c, response.ErrServerInternal.WithOrigin(err))
@@ -139,27 +137,39 @@ func ChatWithAI(c *gin.Context) {
 
 	// 流式读取响应并转发给客户端
 	reader := bufio.NewReader(resp.Body)
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				break
+	c.Stream(func(w io.Writer) bool {
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err == io.EOF {
+					return false
+				}
+				log.Error("读取OpenAI响应失败", "error", err)
+				return false
 			}
-			log.Error("读取OpenAI响应失败", "error", err)
-			break
-		}
 
-		// 转发数据给客户端
-		c.Stream(func(w io.Writer) bool {
+			// 打印调试信息
+			log.Info("从OpenAI接收到的数据", "line", line)
+
+			// 直接转发OpenAI的数据（它已经是正确的SSE格式）
 			_, writeErr := w.Write([]byte(line))
-			return writeErr == nil
-		})
+			if writeErr != nil {
+				log.Error("转发数据到客户端失败", "error", writeErr)
+				return false
+			}
 
-		// 如果客户端断开连接，则停止发送数据
-		if c.Request.Context().Err() != nil {
-			break
+			// 确保数据立即发送到客户端
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
+
+			// 如果客户端断开连接，则停止发送数据
+			if c.Request.Context().Err() != nil {
+				log.Info("客户端断开连接")
+				return false
+			}
 		}
-	}
+	})
 
 	// 记录成功日志
 	log.Info("用户与AI客服聊天成功", "user_open_id", claims.OpenID)
