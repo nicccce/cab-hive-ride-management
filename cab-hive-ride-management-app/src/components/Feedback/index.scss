@@ -1,0 +1,57 @@
+.feedback-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+
+  .feedback-modal-content {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+
+    .feedback-title {
+      display: block;
+      font-size: 20px;
+      font-weight: 500;
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 30px;
+
+      .cancel-btn,
+      .submit-btn {
+        flex: 1;
+        height: 44px;
+        font-size: 16px;
+        border-radius: 8px;
+      }
+
+      .cancel-btn {
+        border-color: #e5e5e5;
+        color: #333;
+      }
+
+      .submit-btn {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+      }
+    }
+  }
+}

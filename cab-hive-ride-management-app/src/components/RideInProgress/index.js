@@ -1,8 +1,10 @@
 import { View, Map, Text } from "@tarojs/components";
 import { useEffect, useState } from "react";
 import { Progress } from "@taroify/core";
+import Taro from "@tarojs/taro";
 import "./index.scss";
-import { OrderStatus } from "../../services/order";
+import { OrderStatus, submitFeedback } from "../../services/order";
+import Feedback from "../Feedback";
 
 const RideInProgress = ({ orderInfo, driverLocation }) => {
   // 地图初始配置
@@ -19,13 +21,15 @@ const RideInProgress = ({ orderInfo, driverLocation }) => {
     showScale: true,
   });
 
-  // 地图标记点
-  const [markers, setMarkers] = useState([]);
-  // 路径规划线
-  const [polyline, setPolyline] = useState([]);
-  // 行程进度
-  const [progress, setProgress] = useState(0);
-
+  
+    // 地图标记点
+    const [markers, setMarkers] = useState([]);
+    // 路径规划线
+    const [polyline, setPolyline] = useState([]);
+    // 行程进度
+    const [progress, setProgress] = useState(0);
+    // 反馈模态框显示状态
+    const [showFeedback, setShowFeedback] = useState(false);
   // 更新地图标记和计算进度
   useEffect(() => {
     if (!orderInfo || orderInfo.status !== OrderStatus.InProgress) return;
@@ -197,8 +201,40 @@ const RideInProgress = ({ orderInfo, driverLocation }) => {
 
   // 处理反馈按钮点击
   const handleFeedback = () => {
-    console.log("用户点击了反馈按钮");
-    // 这里可以添加反馈逻辑，比如跳转到反馈页面或弹出反馈模态框
+    setShowFeedback(true);
+  };
+
+  // 处理反馈提交
+  const handleFeedbackSubmit = async (feedbackData) => {
+    try {
+      const response = await submitFeedback(feedbackData);
+      if (response.code === 200) {
+        Taro.showToast({
+          title: "反馈提交成功",
+          icon: "success",
+          duration: 2000
+        });
+        setShowFeedback(false);
+      } else {
+        Taro.showToast({
+          title: response.message || "提交失败，请重试",
+          icon: "none",
+          duration: 2000
+        });
+      }
+    } catch (error) {
+      console.error("提交反馈失败:", error);
+      Taro.showToast({
+        title: "提交失败，请重试",
+        icon: "none",
+        duration: 2000
+      });
+    }
+  };
+
+  // 处理取消反馈
+  const handleCancelFeedback = () => {
+    setShowFeedback(false);
   };
 
   if (!orderInfo) {
@@ -250,6 +286,14 @@ const RideInProgress = ({ orderInfo, driverLocation }) => {
             </View>
           </View>
         </View>
+        {/* 反馈模态框 */}
+        {showFeedback && orderInfo && (
+          <Feedback
+            orderId={orderInfo.id}
+            onSubmit={handleFeedbackSubmit}
+            onCancel={handleCancelFeedback}
+          />
+        )}
       </View>
     </View>
   );
