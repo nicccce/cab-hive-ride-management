@@ -315,7 +315,7 @@ func GetOrder(c *gin.Context) {
 		}
 		return
 	}
-	
+
 	// 转换为响应格式
 	orderResp := OrderResponse{
 		ID:            order.ID,
@@ -361,7 +361,7 @@ func GetOrder(c *gin.Context) {
 			return nil
 		}(),
 	}
-	
+
 	// 返回成功响应
 	log.Info("查询订单详情成功", "id", orderID)
 	response.Success(c, orderResp)
@@ -386,10 +386,10 @@ func GetUnfinishedOrder(c *gin.Context) {
 	}
 
 	// 查询用户未完成的订单
-	// 未完成订单指的是状态不是"completed"也不是"cancelled"的订单
+	// 未完成订单指的是状态不是"completed"也不是"cancelled"也不是"reserved"的订单
 	var order model.Order
-	err := database.DB.Where("user_open_id = ? AND status NOT IN (?, ?)",
-		claims.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
+	err := database.DB.Where("user_open_id = ? AND status NOT IN (?, ?, ?)",
+		claims.OpenID, model.OrderStatusCompleted, model.OrderStatusCancelled, model.OrderStatusReserved).
 		First(&order).Error
 
 	// 如果没有找到未完成的订单，返回空
@@ -586,43 +586,44 @@ func CancelOrder(c *gin.Context) {
 		}
 		return
 	}
-	
+
 	// 验证订单是否属于当前用户
 	if order.UserOpenID != claims.OpenID {
 		log.Error("订单不属于当前用户", "order_user_open_id", order.UserOpenID, "user_open_id", claims.OpenID)
 		response.Fail(c, response.ErrUnauthorized)
 		return
 	}
-	
+
 	// 验证订单状态是否为等待司机接单
 	if order.Status != model.OrderStatusWaitingForDriver {
 		log.Error("订单状态不是等待司机接单，无法取消", "order_status", order.Status)
 		response.Fail(c, response.ErrInvalidRequest.WithTips("订单状态不是等待司机接单，无法取消"))
 		return
 	}
-	
+
 	// 更新订单状态为已取消
 	now := time.Now()
 	order.Status = model.OrderStatusCancelled
 	order.CancelReason = "用户取消"
 	order.EndTime = &now
-	
+
 	if err := database.DB.Save(&order).Error; err != nil {
 		log.Error("更新订单状态失败", "error", err)
 		response.Fail(c, response.ErrDatabase.WithOrigin(err))
 		return
 	}
-	
+
 	// 从Redis中移除订单
 	if err := RemoveOrderFromRedis(order.ID, model.OrderStatusWaitingForDriver); err != nil {
 		log.Error("从Redis移除订单失败", "error", err, "order_id", order.ID)
 		// 注意：这里不返回错误，因为订单已经成功更新到数据库
 	}
-	
+
 	// 返回成功响应
 	log.Info("取消订单成功", "order_id", order.ID)
 	response.Success(c, nil)
 }
+
 // GetUserOrders 处理查询用户所有订单请求（支持分页和条件查询）
 func GetUserOrders(c *gin.Context) {
 	// 从上下文中获取用户信息
