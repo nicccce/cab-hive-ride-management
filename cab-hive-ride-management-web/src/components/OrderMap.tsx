@@ -19,15 +19,47 @@ interface OrderMapProps {
   height?: string | number;
 }
 
-const OrderMap: React.FC<OrderMapProps> = ({ 
-  startLocation, 
-  endLocation, 
+// 计算两个坐标点之间的中心点
+const calculateCenter = (start: OrderLocation, end: OrderLocation) => {
+  return {
+    lat: (start.latitude + end.latitude) / 2,
+    lng: (start.longitude + end.longitude) / 2
+  };
+};
+
+// 计算适合的缩放级别
+const calculateZoom = (start: OrderLocation, end: OrderLocation) => {
+  // 简化的缩放级别计算
+  // 实际项目中可以根据两点间的距离更精确地计算
+  const latDiff = Math.abs(start.latitude - end.latitude);
+  const lngDiff = Math.abs(start.longitude - end.longitude);
+  
+  // 取较大的差值来决定缩放级别
+  const maxDiff = Math.max(latDiff, lngDiff);
+  
+  // 根据差值确定缩放级别
+  if (maxDiff > 1) return 10;
+  if (maxDiff > 0.5) return 11;
+  if (maxDiff > 0.2) return 12;
+  if (maxDiff > 0.1) return 13;
+  if (maxDiff > 0.05) return 14;
+  if (maxDiff > 0.02) return 15;
+  return 16;
+};
+
+const OrderMap: React.FC<OrderMapProps> = ({
+  startLocation,
+  endLocation,
   routePoints,
   height = '400px'
 }) => {
-  const mapRef = useRef(null);
-  const markerRef = useRef(null);
-  const polylineRef = useRef(null);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const polylineRef = useRef<any>(null);
+
+  // 计算中心点和缩放级别
+  const center = calculateCenter(startLocation, endLocation);
+  const zoom = calculateZoom(startLocation, endLocation);
 
   // 样式定义
   const markerStyles = {
@@ -87,7 +119,11 @@ const OrderMap: React.FC<OrderMapProps> = ({
   // 地图初始化完成事件处理器
   const onMapInited = () => {
     console.log('地图加载完成');
-    // 可以在这里进行一些地图操作
+    // 设置地图中心点和缩放级别
+    if (mapRef.current) {
+      mapRef.current.setCenter(center);
+      mapRef.current.setZoom(zoom);
+    }
   };
 
   return (
@@ -96,7 +132,8 @@ const OrderMap: React.FC<OrderMapProps> = ({
         ref={mapRef}
         apiKey="OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77"
         options={{
-          zoom: 14,
+          center: center,
+          zoom: zoom,
         }}
         onMapInited={onMapInited}
       >
