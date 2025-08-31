@@ -55,4 +55,20 @@ func (m *ModuleDriver) InitRouter(r *gin.RouterGroup) {
 	// 获取司机自己的所有司机审核信息列表 - 需要用户认证
 	// 接口地址: GET /api/users/drivers/self/pending
 	r.GET("/users/drivers/self/pending", middleware.Auth(1), GetSelfPendingDrivers)
+
+	// 查看司机总收入 - 需要司机或管理员认证
+	// 接口地址: GET /api/users/drivers/income/total
+	r.GET("/users/drivers/income/total", middleware.Auth(2), GetDriverTotalIncome)
+
+	// 获取司机收入列表 - 需要司机或管理员认证
+	// 接口地址: GET /api/users/drivers/income/list
+	r.GET("/users/drivers/income/list", middleware.Auth(2), GetDriverIncomeList)
+
+	// 查看收入具体信息 - 需要司机或管理员认证
+	// 接口地址: GET /api/users/drivers/income/:id
+	r.GET("/users/drivers/income/:id", middleware.Auth(2), GetDriverIncome)
+
+	// 管理员查看所有收入列表 - 需要管理员认证
+	// 接口地址: GET /api/admin/income/list
+	r.GET("/admin/income/list", middleware.Auth(3), GetAllIncomeList)
 }

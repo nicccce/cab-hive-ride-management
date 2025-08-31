@@ -878,3 +878,409 @@ func GetDriverVehicles(c *gin.Context) {
 	// 返回成功响应
 	response.Success(c, resp)
 }
+
+// DriverIncomeResponse 定义司机收入信息响应的结构体
+type DriverIncomeResponse struct {
+	ID          uint      `json:"id"`
+	DriverID    uint      `json:"driver_id"`
+	OrderID     *uint     `json:"order_id"`
+	IncomeType  string    `json:"income_type"`
+	Amount      float64   `json:"amount"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// GetDriverTotalIncome 处理查询司机总收入请求
+func GetDriverTotalIncome(c *gin.Context) {
+	// 从上下文中获取用户信息
+	payload, exists := c.Get("payload")
+	if !exists {
+		log.Error("无法获取用户信息")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 断言 payload 为 jwt.Claims 类型
+	claims, ok := payload.(*jwt.Claims)
+	if !ok {
+		log.Error("用户信息类型错误")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 查找司机信息
+	var driver model.Driver
+	if err := database.DB.Where("open_id = ?", claims.OpenID).First(&driver).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Error("司机信息不存在", "open_id", claims.OpenID)
+			response.Fail(c, response.ErrNotFound)
+		} else {
+			log.Error("数据库查询失败", "error", err)
+			response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		}
+		return
+	}
+
+	// 查询司机总收入
+	var totalIncome float64
+	err := database.DB.Model(&model.DriverIncome{}).
+		Where("driver_id = ?", driver.ID).
+		Select("COALESCE(SUM(amount), 0)").
+		Scan(&totalIncome).Error
+
+	if err != nil {
+		log.Error("查询司机总收入失败", "error", err)
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 构造响应数据
+	resp := map[string]interface{}{
+		"driver_id": driver.ID,
+		"total":     totalIncome,
+	}
+
+	// 返回成功响应
+	log.Info("查询司机总收入成功", "driver_id", driver.ID, "total", totalIncome)
+	response.Success(c, resp)
+}
+
+// GetDriverIncomeList 处理查询司机收入列表请求
+func GetDriverIncomeList(c *gin.Context) {
+	// 从上下文中获取用户信息
+	payload, exists := c.Get("payload")
+	if !exists {
+		log.Error("无法获取用户信息")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 断言 payload 为 jwt.Claims 类型
+	claims, ok := payload.(*jwt.Claims)
+	if !ok {
+		log.Error("用户信息类型错误")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 获取查询参数
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("page_size", "10")
+	incomeType := c.Query("income_type")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	// 解析分页参数
+	pageNum := 1
+	size := 10
+	fmt.Sscanf(page, "%d", &pageNum)
+	fmt.Sscanf(pageSize, "%d", &size)
+
+	// 查找司机信息
+	var driver model.Driver
+	if err := database.DB.Where("open_id = ?", claims.OpenID).First(&driver).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Error("司机信息不存在", "open_id", claims.OpenID)
+			response.Fail(c, response.ErrNotFound)
+		} else {
+			log.Error("数据库查询失败", "error", err)
+			response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		}
+		return
+	}
+
+	// 构建查询条件
+	query := database.DB.Model(&model.DriverIncome{}).Where("driver_id = ?", driver.ID)
+
+	// 添加收入类型查询条件
+	if incomeType != "" {
+		query = query.Where("income_type = ?", incomeType)
+	}
+
+	// 添加日期范围查询条件
+	if startDate != "" {
+		startTime, err := time.Parse("2006-01-02", startDate)
+		if err == nil {
+			query = query.Where("created_at >= ?", startTime)
+		}
+	}
+
+	if endDate != "" {
+		endTime, err := time.Parse("2006-01-02", endDate)
+		if err == nil {
+			// 将结束日期设置为当天的最后时刻
+			endTime = time.Date(endTime.Year(), endTime.Month(), endTime.Day(), 23, 59, 59, 0, endTime.Location())
+			query = query.Where("created_at <= ?", endTime)
+		}
+	}
+
+	// 计算总数
+	var total int64
+	query.Count(&total)
+
+	// 计算偏移量
+	offset := (pageNum - 1) * size
+
+	// 查询收入列表，按创建时间倒序排列
+	var incomes []model.DriverIncome
+	if err := query.Offset(offset).Limit(size).Order("created_at DESC").Find(&incomes).Error; err != nil {
+		log.Error("查询司机收入列表失败", "error", err)
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 转换为响应格式
+	incomeList := make([]DriverIncomeResponse, len(incomes))
+	for i, income := range incomes {
+		incomeList[i] = DriverIncomeResponse{
+			ID:          income.ID,
+			DriverID:    income.DriverID,
+			OrderID:     income.OrderID,
+			IncomeType:  income.IncomeType,
+			Amount:      income.Amount,
+			Description: income.Description,
+			CreatedAt:   income.CreatedAt,
+		}
+	}
+
+	// 计算总页数
+	totalPages := int((total + int64(size) - 1) / int64(size))
+
+	// 构造响应数据
+	resp := map[string]interface{}{
+		"incomes": incomeList,
+		"pagination": map[string]interface{}{
+			"current_page": pageNum,
+			"page_size":    size,
+			"total_count":  total,
+			"total_pages":  totalPages,
+		},
+	}
+
+	// 返回成功响应
+	log.Info("查询司机收入列表成功", "driver_id", driver.ID, "total", total)
+	response.Success(c, resp)
+}
+
+// GetDriverIncome 处理查询司机收入详情请求
+func GetDriverIncome(c *gin.Context) {
+	// 从上下文中获取用户信息
+	payload, exists := c.Get("payload")
+	if !exists {
+		log.Error("无法获取用户信息")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 断言 payload 为 jwt.Claims 类型
+	claims, ok := payload.(*jwt.Claims)
+	if !ok {
+		log.Error("用户信息类型错误")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 获取收入ID参数
+	incomeID := c.Param("id")
+	if incomeID == "" {
+		log.Error("收入ID参数不能为空")
+		response.Fail(c, response.ErrInvalidRequest)
+		return
+	}
+
+	// 查找司机信息
+	var driver model.Driver
+	if err := database.DB.Where("open_id = ?", claims.OpenID).First(&driver).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Error("司机信息不存在", "open_id", claims.OpenID)
+			response.Fail(c, response.ErrNotFound)
+		} else {
+			log.Error("数据库查询失败", "error", err)
+			response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		}
+		return
+	}
+
+	// 查找收入记录
+	var income model.DriverIncome
+	query := database.DB.Where("id = ?", incomeID)
+
+	// 如果不是管理员，只查询当前司机的收入记录
+	if claims.RoleID != 3 {
+		query = query.Where("driver_id = ?", driver.ID)
+	}
+
+	if err := query.First(&income).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Error("收入记录不存在", "id", incomeID)
+			response.Fail(c, response.ErrNotFound)
+		} else {
+			log.Error("数据库查询失败", "error", err)
+			response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		}
+		return
+	}
+
+	// 转换为响应格式
+	incomeResp := DriverIncomeResponse{
+		ID:          income.ID,
+		DriverID:    income.DriverID,
+		OrderID:     income.OrderID,
+		IncomeType:  income.IncomeType,
+		Amount:      income.Amount,
+		Description: income.Description,
+		CreatedAt:   income.CreatedAt,
+	}
+
+	// 返回成功响应
+	log.Info("查询司机收入详情成功", "income_id", income.ID)
+	response.Success(c, incomeResp)
+}
+
+// GetAllIncomeList 处理管理员查询所有收入列表请求
+func GetAllIncomeList(c *gin.Context) {
+	// 从上下文中获取用户信息
+	payload, exists := c.Get("payload")
+	if !exists {
+		log.Error("无法获取用户信息")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 断言 payload 为 jwt.Claims 类型
+	claims, ok := payload.(*jwt.Claims)
+	if !ok {
+		log.Error("用户信息类型错误")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 检查是否为管理员
+	if claims.RoleID != 3 {
+		log.Error("权限不足，需要管理员权限")
+		response.Fail(c, response.ErrUnauthorized)
+		return
+	}
+
+	// 获取查询参数
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("page_size", "10")
+	driverID := c.Query("driver_id")
+	incomeType := c.Query("income_type")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	// 解析分页参数
+	pageNum := 1
+	size := 10
+	fmt.Sscanf(page, "%d", &pageNum)
+	fmt.Sscanf(pageSize, "%d", &size)
+
+	// 构建查询条件
+	query := database.DB.Model(&model.DriverIncome{})
+
+	// 添加司机ID查询条件
+	if driverID != "" {
+		query = query.Where("driver_id = ?", driverID)
+	}
+
+	// 添加收入类型查询条件
+	if incomeType != "" {
+		query = query.Where("income_type = ?", incomeType)
+	}
+
+	// 添加日期范围查询条件
+	if startDate != "" {
+		startTime, err := time.Parse("2006-01-02", startDate)
+		if err == nil {
+			query = query.Where("created_at >= ?", startTime)
+		}
+	}
+
+	if endDate != "" {
+		endTime, err := time.Parse("2006-01-02", endDate)
+		if err == nil {
+			// 将结束日期设置为当天的最后时刻
+			endTime = time.Date(endTime.Year(), endTime.Month(), endTime.Day(), 23, 59, 59, 0, endTime.Location())
+			query = query.Where("created_at <= ?", endTime)
+		}
+	}
+
+	// 计算总数
+	var total int64
+	query.Count(&total)
+
+	// 计算偏移量
+	offset := (pageNum - 1) * size
+
+	// 查询收入列表，按创建时间倒序排列
+	var incomes []model.DriverIncome
+	if err := query.Offset(offset).Limit(size).Order("created_at DESC").Find(&incomes).Error; err != nil {
+		log.Error("查询所有收入列表失败", "error", err)
+		response.Fail(c, response.ErrDatabase.WithOrigin(err))
+		return
+	}
+
+	// 转换为响应格式
+	incomeList := make([]DriverIncomeResponse, len(incomes))
+	for i, income := range incomes {
+		incomeList[i] = DriverIncomeResponse{
+			ID:          income.ID,
+			DriverID:    income.DriverID,
+			OrderID:     income.OrderID,
+			IncomeType:  income.IncomeType,
+			Amount:      income.Amount,
+			Description: income.Description,
+			CreatedAt:   income.CreatedAt,
+		}
+	}
+
+	// 计算总页数
+	totalPages := int((total + int64(size) - 1) / int64(size))
+
+	// 构造响应数据
+	resp := map[string]interface{}{
+		"incomes": incomeList,
+		"pagination": map[string]interface{}{
+			"current_page": pageNum,
+			"page_size":    size,
+			"total_count":  total,
+			"total_pages":  totalPages,
+		},
+	}
+
+	// 返回成功响应
+	log.Info("查询所有收入列表成功", "total", total)
+	response.Success(c, resp)
+}
+
+// CreateDriverIncome 创建司机收入记录，供其他模块调用
+func CreateDriverIncome(driverID uint, orderID *uint, incomeType string, amount float64, description string) error {
+	// 验证收入类型
+	validTypes := map[string]bool{
+		model.IncomeTypeOrder:    true,
+		model.IncomeTypeActivity: true,
+		model.IncomeTypeOther:    true,
+	}
+
+	if !validTypes[incomeType] {
+		return fmt.Errorf("无效的收入类型: %s", incomeType)
+	}
+
+	// 创建收入记录
+	income := model.DriverIncome{
+		DriverID:    driverID,
+		OrderID:     orderID,
+		IncomeType:  incomeType,
+		Amount:      amount,
+		Description: description,
+	}
+
+	// 保存到数据库
+	if err := database.DB.Create(&income).Error; err != nil {
+		return fmt.Errorf("创建司机收入记录失败: %w", err)
+	}
+
+	log.Info("创建司机收入记录成功", "income_id", income.ID, "driver_id", driverID, "amount", amount)
+	return nil
+}
