@@ -149,7 +149,7 @@ func ChatWithAI(c *gin.Context) {
 			}
 
 			// 打印调试信息
-			log.Info("从OpenAI接收到的数据", "line", line)
+			//log.Info("从OpenAI接收到的数据", "line", line)
 
 			// 直接转发OpenAI的数据（它已经是正确的SSE格式）
 			_, writeErr := w.Write([]byte(line))
