@@ -69,3 +69,30 @@ export const uploadImage = async (file) => {
     }
   }
 }
+
+// 发送AI客服消息
+export const sendAiMessage = async (message) => {
+  // 使用Taro.request发送SSE请求
+  const token = Taro.getStorageSync('token');
+  
+  try {
+    const res = await Taro.request({
+      url: `${API_BASE_URL}${API_ENDPOINTS.AI_CHAT}`,
+      method: 'POST',
+      header: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        message: message
+      },
+      responseType: 'text'
+    });
+    
+    // 返回完整的响应对象
+    return res;
+  } catch (error) {
+    console.error('AI客服请求失败:', error);
+    throw error;
+  }
+}

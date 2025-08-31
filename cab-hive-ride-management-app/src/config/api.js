@@ -43,6 +43,9 @@ export const API_ENDPOINTS = {
   
   // 司机位置相关
   DRIVER_LOCATION: '/api/rides/location',
+  
+  // AI客服相关
+  AI_CHAT: '/api/ai/chat',
 }
 
 

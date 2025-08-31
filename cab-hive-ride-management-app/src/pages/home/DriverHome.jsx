@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { View } from "@tarojs/components";
 import Taro, { useDidHide, useDidShow } from "@tarojs/taro";
+import { FloatingBubble } from "@taroify/core";
+import { ChatOutlined } from "@taroify/icons";
 import useAuth from "../../hooks/useAuth";
 import { getVehicleList } from "../../services/vehicle";
 import DriverOrderPanel from "../../components/DriverOrderPanel/index";
@@ -14,6 +16,7 @@ import {
 import { uploadDriverLocation } from "../../services/location";
 import DriverWaitingForPassenger from "../../components/DriverWaitingForPassenger";
 import DriverRideInProgress from "../../components/DriverRideInProgress";
+import AiChat from "../../components/AiChat";
 
 const DriverHome = () => {
   const { userInfo } = useAuth();
@@ -26,6 +29,8 @@ const DriverHome = () => {
   const [availableOrder, setAvailableOrder] = useState(null);
   // 用户当前位置状态
   const [userLocation, setUserLocation] = useState(null);
+  // AI客服对话框显示状态
+  const [showAiChat, setShowAiChat] = useState(false);
   // 订单轮询定时器引用
   const orderPollingTimerRef = useRef(null);
   // 后台任务定时器引用（位置上传等）
@@ -296,6 +301,18 @@ const DriverHome = () => {
           })()
         )}
       </>
+      {/* AI客服对话框 */}
+      {showAiChat && (
+        <AiChat onClose={() => setShowAiChat(false)} />
+      )}
+      
+      {/* 浮动气泡 */}
+      <FloatingBubble
+        axis="xy"
+        magnetic="x"
+        icon={<ChatOutlined />}
+        onClick={() => setShowAiChat(true)}
+      />
     </View>
   );
 };

@@ -7,9 +7,11 @@ import {
   Bookmark,
   ClockOutlined,
   Close,
-  Replay
+  Replay,
+  ChatOutlined
 } from '@taroify/icons'
-import { Dialog } from '@taroify/core'
+import { Dialog, FloatingBubble } from '@taroify/core'
+import AiChat from '../../components/AiChat'
 
 import useAuth from '../../hooks/useAuth'
 import ProfileHeader from '../../components/ProfileHeader'
@@ -26,6 +28,8 @@ const Profile = () => {
   const [showLoginModal, setShowLoginModal] = useState(false)
   // 控制编辑个人资料模态框显示状态的变量，true 表示显示，false 表示隐藏
   const [showEditModal, setShowEditModal] = useState(false)
+  // 控制AI客服对话框显示状态的变量，true 表示显示，false 表示隐藏
+  const [showAiChat, setShowAiChat] = useState(false)
 
   // 页面加载时设置导航栏标题为"个人中心"
   useEffect(() => {
@@ -232,6 +236,19 @@ const Profile = () => {
         onClose={() => setShowEditModal(false)}
         userInfo={userInfo}
         onSuccess={handleEditProfileSuccess}
+      />
+      
+      {/* AI客服对话框 */}
+      {showAiChat && (
+        <AiChat onClose={() => setShowAiChat(false)} />
+      )}
+      
+      {/* 浮动气泡 */}
+      <FloatingBubble
+        axis="xy"
+        magnetic="x"
+        icon={<ChatOutlined />}
+        onClick={() => setShowAiChat(true)}
       />
     </View>
   )

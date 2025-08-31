@@ -148,3 +148,6 @@ openai:
   
   # 使用的模型
   model: "gpt-3.5-turbo"
+
+  # OpenAI API Base URL
+  base_url: "http://ai.com/v1/chat/completions"

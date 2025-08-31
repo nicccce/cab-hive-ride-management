@@ -1,6 +1,8 @@
 import Taro, { useDidHide, useDidShow } from "@tarojs/taro";
 import { useEffect, useRef, useState } from "react";
 import { View } from "@tarojs/components";
+import { FloatingBubble } from "@taroify/core";
+import { ChatOutlined } from "@taroify/icons";
 import { getUnfinishedOrder, OrderStatus } from "../../services/order";
 import RideOrderPage from "../../components/RideOrder";
 import WaitingForDriver from "../../components/WaitingForDriver";
@@ -9,6 +11,7 @@ import WaitingForDriverArrive from "../../components/WaitingForDriverArrive";
 import { getDriverInfo } from "../../services/driver";
 import { getVehicleDetail } from "../../services/vehicle";
 import RideInProgress from "../../components/RideInProgress";
+import AiChat from "../../components/AiChat";
 
 const PassengerHome = () => {
   // 定时器引用
@@ -20,6 +23,8 @@ const PassengerHome = () => {
   const [driverInfo, setDriverInfo] = useState(null);
   // 车辆信息状态
   const [vehicleInfo, setVehicleInfo] = useState(null);
+  // AI客服对话框显示状态
+  const [showAiChat, setShowAiChat] = useState(false);
 
   // 获取司机位置
   const fetchDriverLocation = async (driverId) => {
@@ -203,6 +208,18 @@ const PassengerHome = () => {
           }
         })()
       )}
+      {/* AI客服对话框 */}
+      {showAiChat && (
+        <AiChat onClose={() => setShowAiChat(false)} />
+      )}
+      
+      {/* 浮动气泡 */}
+      <FloatingBubble
+        axis="xy"
+        magnetic="x"
+        icon={<ChatOutlined />}
+        onClick={() => setShowAiChat(true)}
+      />
     </>
   );
 };
