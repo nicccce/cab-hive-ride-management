@@ -5,6 +5,7 @@ import userReducer from './modules/user';
 import vehicleReducer from './modules/vehicle';
 import dashboardReducer from './modules/dashboard';
 import orderReducer from './modules/order';
+import feedbackReducer from './modules/feedback';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     vehicle: vehicleReducer,
     dashboard: dashboardReducer,
     order: orderReducer,
+    feedback: feedbackReducer,
   },
 });
 

@@ -231,3 +231,4 @@ export interface VehicleListParams {
   model_name?: string;
   status?: string;
 }
+export * from './feedback';
