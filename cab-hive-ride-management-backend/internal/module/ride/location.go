@@ -6,6 +6,7 @@ import (
 	"cab-hive/internal/global/redis"
 	"cab-hive/internal/global/response"
 	"cab-hive/internal/model"
+	"cab-hive/internal/module/admin"
 	"cab-hive/internal/module/order"
 	"context"
 	"encoding/json"
@@ -127,6 +128,13 @@ func UploadLocation(c *gin.Context) {
 					"driver_open_id", payload.OpenID,
 					"distance", fmt.Sprintf("%.2f公里", distance),
 					"threshold", fmt.Sprintf("%.2f公里", distanceThreshold))
+				
+				// 创建预警信息
+				content := fmt.Sprintf("司机 %s 当前位置距离订单路线过远，距离为 %.2f 公里，超过阈值 %.2f 公里",
+					payload.OpenID, distance, distanceThreshold)
+				if err := admin.CreateAlert(activeOrder.ID, content, "driver_distance_exceeded"); err != nil {
+					log.Error("创建预警信息失败", "error", err)
+				}
 			}
 		}
 	}
