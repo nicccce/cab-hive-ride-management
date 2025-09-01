@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Select, Pagination, message, Modal, Input } from 'antd';
+import { Table, Button, Select, Pagination, message, Modal, Input, Descriptions, Tabs } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { getAlertListAsync, processAlertAsync } from '../../store/modules/alert';
 import { Alert } from '../../types';
+import { useAppDispatch } from '../../hooks';
+import { getOrderDetailAsync } from '../../store/modules/order';
+import { Order } from '../../types';
+import dayjs from 'dayjs';
+import OrderMap from '../../components/OrderMap';
 
 const { Option } = Select;
 
 const AlertManagement: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const appDispatch = useAppDispatch();
   const { alertList, pagination, loading, error } = useSelector((state: RootState) => state.alert);
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -19,6 +25,9 @@ const AlertManagement: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentAlertId, setCurrentAlertId] = useState<number | null>(null);
   const [processNote, setProcessNote] = useState('');
+  // 订单详情相关状态
+  const [orderDetailVisible, setOrderDetailVisible] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const columns: ColumnsType<Alert> = [
     {
@@ -63,13 +72,20 @@ const AlertManagement: React.FC = () => {
       title: '操作',
       key: 'action',
       render: (_, record) => (
-        <Button
-          type="primary"
-          onClick={() => handleProcessAlert(record.id)}
-          disabled={record.is_processed}
-        >
-          {record.is_processed ? '已处理' : '处理'}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="primary"
+            onClick={() => handleProcessAlert(record.id)}
+            disabled={record.is_processed}
+          >
+            {record.is_processed ? '已处理' : '处理'}
+          </Button>
+          <Button
+            onClick={() => handleViewOrderDetail(record.order_id)}
+          >
+            查看订单
+          </Button>
+        </div>
       ),
     },
   ];
@@ -89,6 +105,17 @@ const AlertManagement: React.FC = () => {
     // 打开模态框，让用户输入处理说明
     setCurrentAlertId(id);
     setIsModalVisible(true);
+  };
+  // 查看订单详情
+  const handleViewOrderDetail = async (orderId: number) => {
+    try {
+      const result = await appDispatch(getOrderDetailAsync(orderId)).unwrap();
+      setSelectedOrder(result);
+      setOrderDetailVisible(true);
+    } catch (error) {
+      message.error('获取订单详情失败');
+      console.error('获取订单详情失败:', error);
+    }
   };
 
   const handleProcessConfirm = () => {
@@ -201,6 +228,94 @@ const AlertManagement: React.FC = () => {
         />
       </div>
       
+      {/* 订单详情弹窗 */}
+      <Modal
+        title="订单详情"
+        open={orderDetailVisible}
+        onCancel={() => {
+          setOrderDetailVisible(false);
+          setSelectedOrder(null);
+        }}
+        footer={null}
+        width={800}
+      >
+        {selectedOrder && (
+          <Tabs defaultActiveKey="info" items={[
+            {
+              key: 'info',
+              label: '基本信息',
+              children: (
+                <Descriptions column={2} bordered>
+                  <Descriptions.Item label="订单ID" span={1}>
+                    {selectedOrder.id}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="用户OpenID" span={2}>
+                    <span style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                      {selectedOrder.user_open_id}
+                    </span>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="司机OpenID" span={2}>
+                    <span style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                      {selectedOrder.driver_open_id && selectedOrder.driver_open_id !== '""' ? selectedOrder.driver_open_id : '未分配'}
+                    </span>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="起点" span={2}>
+                    {selectedOrder.start_location.name || `${selectedOrder.start_location.latitude},${selectedOrder.start_location.longitude}`}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="终点" span={2}>
+                    {selectedOrder.end_location.name || `${selectedOrder.end_location.latitude},${selectedOrder.end_location.longitude}`}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="距离" span={1}>
+                    {(selectedOrder.distance / 1000).toFixed(2)} km
+                  </Descriptions.Item>
+                  <Descriptions.Item label="预计时长" span={1}>
+                    {selectedOrder.duration} 分钟
+                  </Descriptions.Item>
+                  <Descriptions.Item label="费用" span={1}>
+                    ¥{selectedOrder.fare.toFixed(2)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="过路费" span={1}>
+                    ¥{selectedOrder.tolls.toFixed(2)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="下单时间" span={1}>
+                    {dayjs(selectedOrder.start_time).format('YYYY-MM-DD HH:mm:ss')}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="完成时间" span={1}>
+                    {selectedOrder.end_time ? dayjs(selectedOrder.end_time).format('YYYY-MM-DD HH:mm:ss') : '未完成'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="预约时间" span={1}>
+                    {selectedOrder.reserve_time ? dayjs(selectedOrder.reserve_time).format('YYYY-MM-DD HH:mm:ss') : '立即出发'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="支付时间" span={1}>
+                    {selectedOrder.payment_time ? dayjs(selectedOrder.payment_time).format('YYYY-MM-DD HH:mm:ss') : '未支付'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="评分" span={1}>
+                    {selectedOrder.rating > 0 ? selectedOrder.rating : '未评分'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="备注" span={2}>
+                    {selectedOrder.comment || '无'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="取消原因" span={2}>
+                    {selectedOrder.cancel_reason || '无'}
+                  </Descriptions.Item>
+                </Descriptions>
+              )
+            },
+            {
+              key: 'map',
+              label: '路线地图',
+              children: (
+                <OrderMap
+                  startLocation={selectedOrder.start_location}
+                  endLocation={selectedOrder.end_location}
+                  routePoints={selectedOrder.route_points}
+                  height={400}
+                />
+              )
+            }
+          ]} />
+        )}
+      </Modal>
       {/* 处理预警的模态框 */}
       <Modal
         title="处理预警"
