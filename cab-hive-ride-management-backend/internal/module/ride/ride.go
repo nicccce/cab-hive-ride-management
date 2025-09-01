@@ -449,8 +449,8 @@ func ProcessReserveOrders(c *gin.Context) {
 		if orderModel.ReserveTime != nil && time.Until(*orderModel.ReserveTime) <= 10*time.Minute {
 			// 检查用户是否有进行中的订单
 			var unfinishedOrder model.Order
-			err := database.DB.Where("user_open_id = ? AND status NOT IN (?, ?)",
-				orderModel.UserOpenID, model.OrderStatusCompleted, model.OrderStatusCancelled).
+			err := database.DB.Where("user_open_id = ? AND status NOT IN (?, ?, ?)",
+				orderModel.UserOpenID, model.OrderStatusCompleted, model.OrderStatusCancelled, model.OrderStatusReserved).
 				First(&unfinishedOrder).Error
 
 			// 如果用户没有未完成的订单，则处理该预约订单

@@ -20,6 +20,7 @@ type Config struct {
 	OSS      OSS    `yaml:"oss"`
 	AliPay   AliPay `yaml:"alipay"`
 	OpenAI   OpenAI `yaml:"openai"`
+	Ride     Ride   `yaml:"ride"`
 }
 
 // OSS 配置
@@ -81,3 +82,14 @@ type OpenAI struct {
 	Model   string `envconfig:"OPENAI_MODEL" yaml:"model" mapstructure:"model"`
 	BaseUrl string `envconfig:"OPENAI_BASE_URL" yaml:"base_url" mapstructure:"base_url"`
 }
+
+// Ride 配置
+type Ride struct {
+	// 司机到达起点的距离阈值（单位：公里）
+	DriverArrivalDistanceThreshold float64 `yaml:"driver_arrival_distance_threshold" mapstructure:"driver_arrival_distance_threshold"`
+	// 司机偏离路线的距离阈值（单位：公里）
+	DriverDeviationDistanceThreshold float64 `yaml:"driver_deviation_distance_threshold" mapstructure:"driver_deviation_distance_threshold"`
+	// 订单超时检查的时间阈值（单位：分钟）
+	OrderTimeoutMinutes int `yaml:"order_timeout_minutes" mapstructure:"order_timeout_minutes"`
+}
+

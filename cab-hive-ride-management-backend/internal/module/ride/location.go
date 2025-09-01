@@ -1,6 +1,7 @@
 package ride
 
 import (
+	"cab-hive/config"
 	"cab-hive/internal/global/database"
 	"cab-hive/internal/global/jwt"
 	"cab-hive/internal/global/redis"
@@ -92,7 +93,7 @@ func UploadLocation(c *gin.Context) {
 			//log.Info("司机位置", "open_id", payload.OpenID, "latitude", req.Latitude, "longitude", req.Longitude, "distance", fmt.Sprintf("%.2f公里", distance))
 
 			// 设置距离阈值（单位：公里），20米 = 0.02公里
-			const distanceThreshold = 0.1 // 100米阈值
+			distanceThreshold := config.Get().Ride.DriverArrivalDistanceThreshold // 100米阈值
 
 			// 如果距离小于阈值，则记录日志并更新订单状态
 			if distance <= distanceThreshold {
@@ -120,7 +121,7 @@ func UploadLocation(c *gin.Context) {
 				activeOrder.RoutePoints)
 
 			// 设置距离阈值（单位：公里）
-			const distanceThreshold = 50.0 // 50公里阈值
+			distanceThreshold := config.Get().Ride.DriverDeviationDistanceThreshold // 50公里阈值
 
 			// 如果距离超过阈值，则报警
 			if distance > distanceThreshold {
@@ -128,7 +129,7 @@ func UploadLocation(c *gin.Context) {
 					"driver_open_id", payload.OpenID,
 					"distance", fmt.Sprintf("%.2f公里", distance),
 					"threshold", fmt.Sprintf("%.2f公里", distanceThreshold))
-				
+
 				// 创建预警信息
 				content := fmt.Sprintf("司机 %s 当前位置距离订单路线过远，距离为 %.2f 公里，超过阈值 %.2f 公里",
 					payload.OpenID, distance, distanceThreshold)

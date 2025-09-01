@@ -1,16 +1,13 @@
 package admin
 
 import (
-	"cab-hive/internal/global/database"
+	"cab-hive/config"
 	"cab-hive/internal/global/redis"
 	"cab-hive/internal/model"
 	"context"
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
-	"gorm.io/gorm"
 )
 
 // CheckOrderTimeout 检查订单超时情况
@@ -75,8 +72,9 @@ func isOrderTimeout(order *model.Order) bool {
 	if err != nil {
 		// 如果Redis中没有司机位置信息，则使用订单开始时间
 		if order.StartTime != nil {
-			// 检查订单开始时间是否超过10分钟
-			return time.Since(*order.StartTime) > 10*time.Minute
+			// 检查订单开始时间是否超过配置的时间阈值
+			timeout := time.Duration(config.Get().Ride.OrderTimeoutMinutes) * time.Minute
+			return time.Since(*order.StartTime) > timeout
 		}
 		return false
 	}
@@ -88,12 +86,14 @@ func isOrderTimeout(order *model.Order) bool {
 	if err := json.Unmarshal([]byte(locationJSON), &driverLocation); err != nil {
 		// 如果解析失败，则使用订单开始时间
 		if order.StartTime != nil {
-			return time.Since(*order.StartTime) > 10*time.Minute
+			timeout := time.Duration(config.Get().Ride.OrderTimeoutMinutes) * time.Minute
+			return time.Since(*order.StartTime) > timeout
 		}
 		return false
 	}
 
-	// 检查司机位置更新时间是否超过10分钟
+	// 检查司机位置更新时间是否超过配置的时间阈值
 	lastUpdateTime := time.Unix(driverLocation.UpdateTime, 0)
-	return time.Since(lastUpdateTime) > 10*time.Minute
+	timeout := time.Duration(config.Get().Ride.OrderTimeoutMinutes) * time.Minute
+	return time.Since(lastUpdateTime) > timeout
 }

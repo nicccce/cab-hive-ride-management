@@ -366,3 +366,12 @@ func GetRedisAlerts(c *gin.Context) {
 	// 返回成功响应
 	response.Success(c, alertList)
 }
+
+// CheckOrderTimeoutAPI 检查订单超时情况的API接口
+func CheckOrderTimeoutAPI(c *gin.Context) {
+	// 调用检查订单超时的函数
+	CheckOrderTimeout()
+
+	// 返回成功响应
+	response.Success(c, nil)
+}

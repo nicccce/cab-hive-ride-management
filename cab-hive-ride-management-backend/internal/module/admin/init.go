@@ -15,9 +15,6 @@ func (u *ModuleAdmin) GetName() string {
 
 func (u *ModuleAdmin) Init() {
 	log = logger.New("Admin")
-	
-	// 启动定时任务调度器
-	StartScheduler()
 }
 
 func selfInit() {

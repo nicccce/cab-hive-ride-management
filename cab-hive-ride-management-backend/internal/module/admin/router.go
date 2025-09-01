@@ -23,5 +23,6 @@ func (u *ModuleAdmin) InitRouter(r *gin.RouterGroup) {
 		adminGroup.GET("/alerts", GetAlerts)                    // 获取预警列表
 		adminGroup.POST("/alerts/:id/process", ProcessAlert)    // 处理预警
 		adminGroup.GET("/alerts/redis", GetRedisAlerts)         // 获取Redis中的预警列表并清空
+		adminGroup.POST("/orders/check-timeout", CheckOrderTimeoutAPI) // 检查订单超时情况
 	}
 }

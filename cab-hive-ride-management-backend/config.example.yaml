@@ -151,3 +151,12 @@ openai:
 
   # OpenAI API Base URL
   base_url: "http://ai.com/v1/chat/completions"
+
+# Ride 配置
+ride:
+  # 司机到达起点的距离阈值（单位：公里）
+  driver_arrival_distance_threshold: 0.1
+  # 司机偏离路线的距离阈值（单位：公里）
+  driver_deviation_distance_threshold: 0.1
+  # 订单超时检查的时间阈值（单位：分钟）
+  order_timeout_minutes: 10
