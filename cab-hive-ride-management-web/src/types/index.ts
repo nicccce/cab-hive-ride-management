@@ -1,5 +1,5 @@
 // 通用类型定义
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   code: number;
   msg: string;
   data: T;
@@ -232,3 +232,4 @@ export interface VehicleListParams {
   status?: string;
 }
 export * from './feedback';
+export * from './alert';

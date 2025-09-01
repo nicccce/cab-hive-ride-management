@@ -11,6 +11,7 @@ import VehicleReviewPage from '../pages/VehicleReview';
 import VehicleManagement from '../pages/VehicleManagement';
 import OrderManagement from '../pages/OrderManagement';
 import FeedbackManagement from '../pages/FeedbackManagement';
+import AlertManagement from '../pages/AlertManagement';
 
 export const router = createBrowserRouter([
   {
@@ -60,6 +61,10 @@ export const router = createBrowserRouter([
       {
         path: '/feedback-management',
         element: <FeedbackManagement />,
+      },
+      {
+        path: '/alert-management',
+        element: <AlertManagement />,
       },
     ],
   },

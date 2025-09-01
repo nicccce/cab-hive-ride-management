@@ -5,6 +5,7 @@ import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { store } from './store';
 import { router } from './router';
+import AlertNotification from './components/AlertNotification';
 import 'antd/dist/reset.css';
 
 const App: React.FC = () => {
@@ -32,6 +33,7 @@ const App: React.FC = () => {
         }}
       >
         <RouterProvider router={router} />
+        <AlertNotification />
       </ConfigProvider>
     </Provider>
   );

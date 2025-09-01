@@ -11,4 +11,14 @@ export const orderService = {
   getOrderDetail: (orderId: number): Promise<ApiResponse<Order>> => {
     return request.get(`/orders/${orderId}`);
   },
+  
+  // 检查订单超时情况
+  checkOrderTimeout: (): Promise<ApiResponse<null>> => {
+    return request.post('/admin/orders/check-timeout');
+  },
+  
+  // 处理预约订单
+  processReserveOrders: (): Promise<ApiResponse<null>> => {
+    return request.post('/rides/orders/process-reserve');
+  },
 };

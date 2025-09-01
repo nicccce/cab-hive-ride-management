@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Button, Space } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  DashboardOutlined, 
-  CarOutlined, 
-  UserOutlined, 
+import {
+  DashboardOutlined,
+  CarOutlined,
+  UserOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
-  MenuUnfoldOutlined
+  MenuUnfoldOutlined,
+  MessageOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { logout } from '../../store/modules/auth';
+import { useAlertPolling } from '../../hooks/useAlertPolling';
 
 const { Header, Sider, Content } = Layout;
 
@@ -21,6 +24,9 @@ const AdminLayout: React.FC = () => {
   const { user } = useAppSelector(state => state.auth);
   
   const [collapsed, setCollapsed] = useState(false);
+  
+  // 使用预警轮询hook
+  useAlertPolling(!!user);
 
   const menuItems = [
     {
@@ -58,7 +64,17 @@ const AdminLayout: React.FC = () => {
       icon: <CarOutlined />,
       label: '订单管理',
     },
-  ];
+    {
+    key: '/feedback-management',
+    icon: <MessageOutlined />,
+    label: '反馈管理',
+  },
+  {
+    key: '/alert-management',
+    icon: <WarningOutlined />,
+    label: '预警管理',
+  },
+];
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(key);
