@@ -9,7 +9,8 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   MessageOutlined,
-  WarningOutlined
+  WarningOutlined,
+  DollarOutlined
 } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { logout } from '../../store/modules/auth';
@@ -73,6 +74,11 @@ const AdminLayout: React.FC = () => {
     key: '/alert-management',
     icon: <WarningOutlined />,
     label: '预警管理',
+  },
+  {
+    key: '/income-management',
+    icon: <DollarOutlined />,
+    label: '收入管理',
   },
 ];
 

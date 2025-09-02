@@ -1,0 +1,136 @@
+.driver-income-page {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 20px 0;
+  
+  .nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #fff;
+    border-bottom: 1px solid #e5e5e5;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    
+    .nav-back {
+      padding: 5px;
+    }
+    
+    .nav-title {
+      font-size: 18px;
+      font-weight: 500;
+    }
+    
+    .nav-placeholder {
+      width: 30px;
+    }
+  }
+  
+  .total-income-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px 20px;
+    text-align: center;
+    margin: 0 15px 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    
+    .total-income-label {
+      font-size: 16px;
+      margin-bottom: 10px;
+      opacity: 0.9;
+    }
+    
+    .total-income-amount {
+      font-size: 32px;
+      font-weight: bold;
+    }
+  }
+  
+  .income-list-header {
+    padding: 15px 20px;
+    
+    .income-list-title {
+      font-size: 18px;
+      font-weight: 500;
+      color: #333;
+    }
+  }
+  
+  .income-list {
+    margin: 0 15px;
+    
+    .income-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background-color: #fff;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      
+      .income-item-left {
+        flex: 1;
+        
+        .income-type {
+          font-size: 16px;
+          font-weight: 500;
+          color: #333;
+          margin-bottom: 5px;
+        }
+        
+        .income-description {
+          font-size: 14px;
+          color: #666;
+          margin-bottom: 5px;
+        }
+        
+        .income-time {
+          font-size: 12px;
+          color: #999;
+        }
+      }
+      
+      .income-item-right {
+        .income-amount {
+          font-size: 16px;
+          font-weight: 500;
+          color: #34c759;
+        }
+      }
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px 0;
+      
+      .empty-text {
+        font-size: 16px;
+        color: #999;
+      }
+    }
+    
+    .loading-state {
+      text-align: center;
+      padding: 20px 0;
+      
+      .loading-text {
+        font-size: 14px;
+        color: #999;
+      }
+    }
+  }
+  
+  .load-more, .no-more {
+    text-align: center;
+    padding: 15px 0;
+    
+    .load-more-text, .no-more-text {
+      font-size: 14px;
+      color: #999;
+    }
+  }
+}

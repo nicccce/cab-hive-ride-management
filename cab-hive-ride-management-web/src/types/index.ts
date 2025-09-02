@@ -231,5 +231,36 @@ export interface VehicleListParams {
   model_name?: string;
   status?: string;
 }
+
+// 收入相关类型
+export interface Income {
+  id: number;
+  driver_id: number;
+  order_id: number | null;
+  income_type: 'order' | 'activity' | 'other';
+  amount: number;
+  description: string;
+  created_at: string;
+}
+
+export interface IncomeListResponse {
+  incomes: Income[];
+  pagination: Pagination;
+}
+
+export interface IncomeListParams {
+  page?: number;
+  page_size?: number;
+  income_type?: 'order' | 'activity' | 'other';
+  start_date?: string;
+  end_date?: string;
+  driver_id?: number;
+}
+
+export interface DriverTotalIncome {
+  driver_id: number;
+  total: number;
+}
+
 export * from './feedback';
 export * from './alert';

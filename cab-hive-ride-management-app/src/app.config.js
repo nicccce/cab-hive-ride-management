@@ -8,6 +8,7 @@ export default defineAppConfig({
     'pages/driver-info/index',
     'pages/driver-edit/index',
     'pages/driver-detail/index',
+    'pages/driver-income/index',
     'pages/vehicle-info/index',
     'pages/vehicle-add/index',
     'pages/vehicle-detail/index',

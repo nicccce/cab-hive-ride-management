@@ -55,6 +55,11 @@ export const API_ENDPOINTS = {
    
   // AI客服相关
   AI_CHAT: '/api/ai/chat',
+  
+  // 收入相关
+  DRIVER_INCOME_TOTAL: '/api/users/drivers/income/total',
+  DRIVER_INCOME_LIST: '/api/users/drivers/income/list',
+  DRIVER_INCOME_DETAIL: '/api/users/drivers/income/{id}',
 }
 
 

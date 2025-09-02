@@ -160,6 +160,12 @@ const Profile = () => {
           />
           <MenuItem
             icon={<ClockOutlined size="20" color="#f59e0b" />}
+            title="我的收入"
+            subtitle="查看司机收入明细"
+            onClick={() => navigateTo('/pages/driver-income/index')}
+          />
+          <MenuItem
+            icon={<ClockOutlined size="20" color="#f59e0b" />}
             title="审核记录"
             subtitle="查看司机和车辆审核记录"
             onClick={() => navigateTo('/pages/audit-records/index')}

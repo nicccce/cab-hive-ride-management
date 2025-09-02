@@ -3,6 +3,7 @@ package alipay
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 
 	"cab-hive/config"
@@ -55,6 +56,33 @@ func updateOrderStatus(orderID string, status string) error {
 	}
 
 	return nil
+}
+
+// getOrder 获取订单信息
+func getOrder(orderID string) (*model.Order, error) {
+	// 从ID中提取数字部分
+	var orderIDNum uint
+	fmt.Sscanf(orderID, "%d", &orderIDNum)
+
+	// 获取订单信息
+	var order model.Order
+	result := database.DB.Where("id = ?", orderIDNum).First(&order)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &order, nil
+}
+
+// getDriverIDByOpenID 通过OpenID获取司机ID
+func getDriverIDByOpenID(driverOpenID string) (uint, error) {
+	var driver model.Driver
+	result := database.DB.Where("open_id = ?", driverOpenID).First(&driver)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+
+	return driver.ID, nil
 }
 
 // recordPaymentTime 记录支付时间
@@ -184,6 +212,44 @@ func NotifyHandler(c *gin.Context) {
 
 		// 记录支付时间
 		if err := recordPaymentTime(orderID, noti.GmtPayment); err != nil { // GmtPayment本身就是string类型
+			c.String(http.StatusInternalServerError, "fail")
+			return
+		}
+
+		// 获取订单信息
+		order, err := getOrder(orderID)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "fail")
+			return
+		}
+
+		// 检查订单是否有分配的司机
+		if order.DriverOpenID == "" {
+			c.String(http.StatusInternalServerError, "fail")
+			return
+		}
+
+		// 通过司机OpenID获取司机ID
+		driverID, err := getDriverIDByOpenID(order.DriverOpenID)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "fail")
+			return
+		}
+
+		// 计算司机收入（订单价格的0.7向下取整）
+		driverIncomeAmount := math.Floor(order.Fare * 0.7)
+
+		// 创建司机收入记录
+		driverIncome := model.DriverIncome{
+			DriverID:    driverID,
+			OrderID:     &order.ID,
+			IncomeType:  model.IncomeTypeOrder,
+			Amount:      driverIncomeAmount,
+			Description: "订单收入",
+		}
+
+		// 保存司机收入记录到数据库
+		if result := database.DB.Create(&driverIncome); result.Error != nil {
 			c.String(http.StatusInternalServerError, "fail")
 			return
 		}

@@ -12,6 +12,7 @@ import VehicleManagement from '../pages/VehicleManagement';
 import OrderManagement from '../pages/OrderManagement';
 import FeedbackManagement from '../pages/FeedbackManagement';
 import AlertManagement from '../pages/AlertManagement';
+import IncomeManagement from '../pages/IncomeManagement';
 
 export const router = createBrowserRouter([
   {
@@ -65,6 +66,10 @@ export const router = createBrowserRouter([
       {
         path: '/alert-management',
         element: <AlertManagement />,
+      },
+      {
+        path: '/income-management',
+        element: <IncomeManagement />,
       },
     ],
   },
