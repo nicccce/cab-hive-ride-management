@@ -5,6 +5,7 @@ import (
 	"cab-hive/internal/model"
 	"cab-hive/tools"
 	"fmt"
+	"gorm.io/gorm/schema"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -21,9 +22,9 @@ var autoMigrateModels = []interface{}{
 	&model.DriverReview{},
 	&model.Vehicle{},
 	&model.VehicleReview{},
-	&model.Order{}, // 订单模型
+	&model.Order{},    // 订单模型
 	&model.Feedback{}, // 反馈模型
-	&model.Alert{}, // 预警模型
+	&model.Alert{},    // 预警模型
 	&model.DriverIncome{},
 }
 
@@ -36,7 +37,9 @@ func Init() {
 		config.Get().Postgres.Port,
 	)
 	gormConfig := &gorm.Config{
-		//NamingStrategy: schema.NamingStrategy{SingularTable: true}, // 还是单数表名好
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: false, // 使用复数表名
+		},
 	}
 
 	switch config.Get().Mode {

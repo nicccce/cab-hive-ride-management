@@ -14,7 +14,14 @@ import (
 func (m *ModuleRide) InitRouter(r *gin.RouterGroup) {
 	// 定义乘车模块的路由组，所有乘车相关端点以 /rides 为前缀
 	rideGroup := r.Group("/rides")
-	
+
+	// 获取司机位置 - 需要用户认证（信息公开）
+	rideGroup.Use(middleware.Auth(1))
+	{
+		// 获取司机位置
+		rideGroup.GET("/location/:id", GetDriverLocation)
+	}
+
 	// 司机位置相关路由 - 需要司机或管理员权限
 	rideGroup.Use(middleware.Auth(2))
 	{
@@ -31,14 +38,7 @@ func (m *ModuleRide) InitRouter(r *gin.RouterGroup) {
 		// 司机结束订单
 		rideGroup.POST("/order/finish", FinishOrder)
 	}
-	
-	// 获取司机位置 - 需要用户认证（信息公开）
-	rideGroup.Use(middleware.Auth(1))
-	{
-		// 获取司机位置
-		rideGroup.GET("/location/:id", GetDriverLocation)
-	}
-	
+
 	// 管理员路由 - 需要管理呈权限
 	rideGroup.Use(middleware.Auth(3))
 	{

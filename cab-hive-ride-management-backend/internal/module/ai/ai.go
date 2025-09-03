@@ -86,7 +86,10 @@ func ChatWithAI(c *gin.Context) {
 	openAIReq := OpenAIRequest{
 		Model: openAIConfig.Model,
 		Messages: []Message{
-			{Role: "system", Content: "你是一个出租车服务平台的客服助手，请用中文回答用户的问题。"},
+			{Role: "system", Content: "你是一个网约车服务平台：智蜂出行的客服助手，请用中文回答用户的问题。" +
+				"常见问题：1.如何注册为乘客：点击微信登录，自动注册为乘客。" +
+				"2.如何注册为司机：微信登录后，点击“个人中心”，选择“注册为司机”，填写司机信息，提交认证，等待审核。" +
+				"3.为何需要定位权限：1.获取用户位置。2.提供导航服务。3.保障用户安全。"},
 			{Role: "user", Content: req.Message},
 		},
 		Stream: true, // 启用流式响应

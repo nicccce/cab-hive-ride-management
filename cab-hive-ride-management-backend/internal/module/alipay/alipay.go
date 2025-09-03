@@ -1,6 +1,7 @@
 package alipay
 
 import (
+	"cab-hive/internal/module/order"
 	"context"
 	"fmt"
 	"math"
@@ -47,6 +48,7 @@ func updateOrderStatus(orderID string, status string) error {
 
 	// 更新订单状态
 	result := database.DB.Model(&model.Order{}).Where("id = ?", orderIDNum).Update("status", status)
+
 	if result.Error != nil {
 		return result.Error
 	}
@@ -54,6 +56,8 @@ func updateOrderStatus(orderID string, status string) error {
 	if result.RowsAffected == 0 {
 		return fmt.Errorf("未找到订单: %s", orderID)
 	}
+
+	order.RemoveOrderFromRedis(orderIDNum, model.OrderStatusWaitingForPayment)
 
 	return nil
 }
@@ -205,7 +209,7 @@ func NotifyHandler(c *gin.Context) {
 		orderID := noti.OutTradeNo
 
 		// 更新订单状态
-		if err := updateOrderStatus(orderID, model.OrderStatusWaitingForPickup); err != nil {
+		if err := updateOrderStatus(orderID, model.OrderStatusCompleted); err != nil {
 			c.String(http.StatusInternalServerError, "fail")
 			return
 		}
