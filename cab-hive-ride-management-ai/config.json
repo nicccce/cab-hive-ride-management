@@ -1,0 +1,34 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 5000,
+    "debug": false
+  },
+  "database": {
+    "host": "localhost",
+    "port": 6379,
+    "password": "",
+    "db": 0
+  },
+  "api": {
+    "base_url": "/api",
+    "version": "v1"
+  },
+  "dispatcher": {
+    "algorithm": "smart_dispatch",
+    "max_distance": 100,
+    "weight_distance": 0.5,
+    "weight_rating": 0.3,
+    "weight_service_match": 0.2
+  },
+  "risk_detector": {
+    "threshold": 0.7,
+    "high_risk_score": 80,
+    "anomaly_detection_model": "isolation_forest"
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file": "logs/ai_module.log"
+  }
+}

@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  ai-module:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5000
+      - DEBUG=False
+    volumes:
+      - ./logs:/app/logs
+      - ./config.json:/app/config.json
+    restart: unless-stopped
+    networks:
+      - cab-hive-network
+
+networks:
+  cab-hive-network:
+    driver: bridge
