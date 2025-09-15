@@ -227,6 +227,6 @@ cab-hive-ride-management-web/
 - 提交信息需包含类型、作用域和描述
 - 类型包括：feat(新功能)、fix(修复)、docs(文档)、style(样式)、refactor(重构)等
 
-## 更多信息
+## 许可证
 
-有关许可证、贡献指南和其他项目级别的信息，请参阅[根目录README](../README.md)。
+本项目采用Apache License 2.0许可证。详情请见根目录下的[LICENSE](../LICENSE)文件。
