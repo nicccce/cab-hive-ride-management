@@ -17,10 +17,13 @@ def create_app():
     CORS(app)
     
     # 注册API蓝图
-    from api import dispatcher_api, risk_api
+    from api import dispatcher_api, risk_api, streaming_api, model_api, ab_testing_api
     
     app.register_blueprint(dispatcher_api.bp, url_prefix='/api/dispatcher')
     app.register_blueprint(risk_api.bp, url_prefix='/api/risk')
+    app.register_blueprint(streaming_api.bp, url_prefix='/api/streaming')
+    app.register_blueprint(model_api.bp, url_prefix='/api/model')
+    app.register_blueprint(ab_testing_api.bp, url_prefix='/api/ab_testing')
     
     @app.route('/')
     def index():

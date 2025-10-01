@@ -6,7 +6,7 @@
 """
 
 from flask import Blueprint, request, jsonify
-from dispatcher import smart_dispatcher
+from dispatcher import smart_dispatcher, rl_dispatcher
 import logging
 
 # 创建蓝图
@@ -77,4 +77,68 @@ def reassign_driver():
         return jsonify({
             "code": 500,
             "message": f"重新分配司机失败: {str(e)}"
+        }), 500
+
+@bp.route('/rl_dispatch', methods=['POST'])
+def rl_dispatch():
+    """
+    基于强化学习的智能派单接口
+    """
+    try:
+        # 获取请求数据
+        data = request.get_json()
+        
+        # 验证必要参数
+        if not data:
+            return jsonify({
+                "code": 400,
+                "message": "请求数据不能为空"
+            }), 400
+        
+        # 调用强化学习派单算法
+        result = rl_dispatcher.dispatch(data)
+        
+        return jsonify({
+            "code": 200,
+            "message": "派单成功",
+            "data": result
+        })
+        
+    except Exception as e:
+        logger.error(f"强化学习派单失败: {str(e)}")
+        return jsonify({
+            "code": 500,
+            "message": f"强化学习派单失败: {str(e)}"
+        }), 500
+
+@bp.route('/rl_reassign_driver', methods=['POST'])
+def rl_reassign_driver():
+    """
+    基于强化学习的重新分配司机接口
+    """
+    try:
+        # 获取请求数据
+        data = request.get_json()
+        
+        # 验证必要参数
+        if not data:
+            return jsonify({
+                "code": 400,
+                "message": "请求数据不能为空"
+            }), 400
+        
+        # 调用强化学习重新分配算法
+        result = rl_dispatcher.reassign(data)
+        
+        return jsonify({
+            "code": 200,
+            "message": "重新分配成功",
+            "data": result
+        })
+        
+    except Exception as e:
+        logger.error(f"强化学习重新分配司机失败: {str(e)}")
+        return jsonify({
+            "code": 500,
+            "message": f"强化学习重新分配司机失败: {str(e)}"
         }), 500
