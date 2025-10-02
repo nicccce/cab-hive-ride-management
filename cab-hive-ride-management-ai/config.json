@@ -19,7 +19,16 @@
     "max_distance": 100,
     "weight_distance": 0.5,
     "weight_rating": 0.3,
-    "weight_service_match": 0.2
+    "weight_service_match": 0.2,
+    "block_dispatch": {
+      "grid_size": 0.02,
+      "max_search_radius": 3,
+      "weights": {
+        "distance": 0.4,
+        "waiting_time": 0.3,
+        "driver_quality": 0.3
+      }
+    }
   },
   "risk_detector": {
     "threshold": 0.7,

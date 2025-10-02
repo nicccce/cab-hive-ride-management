@@ -4,11 +4,16 @@
 
 ## 🎯 核心功能
 
-### 1. 强化学习调度系统
+### 1. 多算法调度系统
+- **基于地图分块的智能派单算法** - [`BlockDispatcher`](dispatcher/block_dispatcher.py) (新增)
+  - **地图分块策略**: 将地图划分为网格区块，优先在相同区块内匹配
+  - **三维度综合考量**: 距离(40%)、用户等待时间(30%)、司机评价质量(30%)
+  - **渐进式搜索**: 当前区块 → 相邻区块 → 扩展搜索范围
+
 - **基于Q-learning的智能派单算法** - [`RLDispatcher`](dispatcher/rl_dispatcher.py)
-- **多维度特征工程**: 距离分数、评级分数、服务匹配分数、经验分数、交通状况分数、天气状况分数、时间段分数、供需关系分数
-- **ε-贪婪策略**和状态离散化
-- **模型持久化**和在线学习能力
+  - **多维度特征工程**: 距离分数、评级分数、服务匹配分数、经验分数、交通状况分数、天气状况分数、时间段分数、供需关系分数
+  - **ε-贪婪策略**和状态离散化
+  - **模型持久化**和在线学习能力
 
 ### 2. 高级异常检测系统  
 - **孤立森林 + 自动编码器集成检测** - [`AdvancedRiskDetector`](risk_detector/advanced_risk_detector.py)
@@ -38,7 +43,8 @@ cab-hive-ride-management-ai/
 ├── dispatcher/           # 派单算法
 │   ├── __init__.py
 │   ├── smart_dispatcher.py  # 传统智能派单
-│   └── rl_dispatcher.py     # 强化学习派单 (新增)
+│   ├── rl_dispatcher.py     # 强化学习派单
+│   └── block_dispatcher.py  # 地图分块派单 (新增)
 ├── risk_detector/        # 风险检测
 │   ├── __init__.py
 │   ├── risk_analyzer.py     # 传统风险分析
@@ -116,7 +122,9 @@ docker-compose logs -f
 
 ### 派单服务
 - `POST /api/dispatcher/smart_dispatch` - 智能派单 (传统算法)
-- `POST /api/dispatcher/rl_dispatch` - 强化学习派单 (新增)
+- `POST /api/dispatcher/block_dispatch` - 地图分块派单 (新增)
+- `POST /api/dispatcher/block_reassign_driver` - 地图分块重新分配 (新增)
+- `POST /api/dispatcher/rl_dispatch` - 强化学习派单
 - `POST /api/dispatcher/reassign_driver` - 重新分配司机
 
 ### 风险检测
